@@ -1,0 +1,212 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "loglady"
+dynamic = ["version"]
+description = ''
+readme = "README.md"
+requires-python = ">=3.12"
+license = "MIT"
+keywords = []
+authors = [
+  { name = "Thea Flowers", email = "thea@winterbloom.com" },
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: Implementation :: CPython",
+]
+dependencies = [
+  "rich",
+]
+
+[project.urls]
+Documentation = "https://github.com/theacodes/loglady#readme"
+Issues = "https://github.com/theacodes/loglady/issues"
+Source = "https://github.com/theacodes/loglady"
+
+[tool.hatch.version]
+path = "src/loglady/__about__.py"
+
+[tool.hatch.envs.default]
+dependencies = [
+  "coverage[toml]>=6.5",
+  "pytest",
+]
+[tool.hatch.envs.default.scripts]
+cov = ["test-cov", "cov-report"]
+cov-report = ["- coverage combine", "coverage report"]
+test = "pytest {args:tests}"
+test-cov = "coverage run -m pytest {args:tests}"
+
+[tool.hatch.envs.lint]
+detached = true
+dependencies = [
+  "ruff>=1.5.0",
+  "pyright"
+]
+[tool.hatch.envs.lint.scripts]
+all = ["style", "typing"]
+format = ["ruff format --fix {args:.}"]
+style = ["ruff check {args:.}"]
+typing = ["pyright"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 120
+
+[tool.ruff.lint]
+select = [
+    # Note: these are ordered to match https://beta.ruff.rs/docs/rules/
+    "F",     # PyFlakes
+    "E",     # pycodestyle errors
+    "W",     # pycodestyle warnings
+    "I",     # isort
+    "N",     # pep8-naming
+    "UP",    # pyupgrade
+    "ASYNC", # flake8-async
+    "BLE",   # flake8-blind-except
+    "FBT",   # flake8-boolean-trap
+    "B",     # flake8-bugbear
+    "A",     # flake8-builtins
+    "COM",   # flake8-commas
+    "C4",    # flake8-comprehensions
+    "DTZ",   # flake8-datetimez
+    "T10",   # flake8-debugger
+    "EM",    # flake8-errmsg
+    "ISC",   # flake8-implicit-str-concat
+    "PIE",   # flake8-pie
+    "PT",    # flake8-pytest-style
+    "Q",     # flake8-quotes
+    "RET",   # flake8-return
+    "SLOT",  # flake8-slots
+    "SIM",   # flake8-simplify
+    "TID",   # flake8-tidy-imports
+    "PTH",   # flake8-pathlib
+    "TD",    # flake8-todo
+    "PL",    # PyLint
+    "TRY",   # tryceratops
+    "NPY",   # NumPy
+    "RUF",   # Ruff
+]
+ignore = [
+    #----- Rules recommended by https://docs.astral.sh/ruff/formatter/#conflicting-lint-rules
+    "W191",   # tab-identation
+    "E111",   # indentation-with-invalid-multiple
+    "E114",   # indentation-with-invalid-multiple-comment
+    "E117",   # over-indented
+    "E501",   # line-too-long
+    "D206",   # indent-with-spaces
+    "D300",   # triple-single-quotes
+    "Q000",   # bad-quotes-inline-string
+    "Q001",   # bad-quotes-multiline-string
+    "Q002",   # bad-quotes-docstring
+    "Q003",   # avoidable-escaped-quote
+    "COM812", # missing-trailing-comma
+    "COM819", # prohibited-trailing-comma
+    "ISC001", # single-line-implicit-string-concatenation
+    "ISC002", # multi-line-implicit-string-concatenation
+    #-----
+    "A003",   # builtin-attribute-shadowing
+    "TD002",  # missing-todo-author
+    "TD003",  # missing-todo-link
+    "SIM108", # if-else-block-instead-of-if-exp
+    "C408",   # unnecessary-collection-call
+    "UP012",  # unnecessary-encode-utf8
+    "RET504", # unnecessary-assign
+    # PyLint too aggressive about too many args, statements, branches, and
+    # returns
+    "PLR0904", # too-many-public-methods
+    "PLR0911", # too-many-return-statements
+    "PLR0912", # too-many-branches
+    "PLR0913", # too-many-arguments
+    "PLR0915", # too-many-statements
+    "PLR2004", # magic-value-comparison
+]
+unfixable = [
+    # Don't touch unused imports
+    "F401",
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["loglady"]
+
+[tool.ruff.lint.flake8-tidy-imports]
+ban-relative-imports = "parents"
+
+[tool.ruff.lint.per-file-ignores]
+# Tests can use magic values, assertions, and relative imports
+# Tests have relaxed rules compared to package code.
+"tests/**/*" = [
+    "PLR2004", # magic-value-comparison
+    "S101",    # assert
+    "TID252",  # relative-imports
+    "ARG001",  # unused-arguments
+]
+
+[tool.pyright]
+include = ["src/glimmer", "tests"]
+exclude = ["**/__pycache__"]
+reportMissingImports = true
+reportMissingTypeStubs = false
+pythonVersion = "3.12"
+pythonPlatform = "Linux"
+typeCheckingMode = "standard"
+strictListInference = true
+strictDictionaryInference = true
+strictSetInference = true
+reportAssertAlwaysTrue = "error"
+reportInvalidStringEscapeSequence = "error"
+reportSelfClsParameterName = "error"
+reportConstantRedefinition = "error"
+reportDeprecated = "error"
+reportDuplicateImport = "error"
+reportIncompatibleMethodOverride = "error"
+reportIncompatibleVariableOverride = "error"
+reportInconsistentConstructor = "error"
+reportMatchNotExhaustive = "warning"
+reportOverlappingOverload = "error"
+reportMissingSuperCall = "error"
+reportPrivateUsage = "warning"
+reportTypeCommentUsage = "error"
+reportUnnecessaryCast = "error"
+reportUnnecessaryComparison = "error"
+reportUnnecessaryContains = "error"
+reportUnnecessaryIsInstance = "error"
+reportUnusedClass = "warning"
+reportUnusedImport = "warning"
+reportUnusedFunction = "warning"
+reportUnusedVariable = "warning"
+reportUntypedBaseClass = "error"
+reportUntypedClassDecorator = "error"
+reportUntypedFunctionDecorator = "error"
+reportUntypedNamedTuple = "error"
+reportCallInDefaultInitializer = "error"
+reportImplicitOverride = "error"
+reportPropertyTypeMismatch = "warning"
+reportShadowedImports = "warning"
+reportUninitializedInstanceVariable = "warning"
+reportUnnecessaryTypeIgnoreComment = "warning"
+reportUnusedCallResult = "warning"
+
+[tool.coverage.run]
+source_pkgs = ["loglady", "tests"]
+branch = true
+parallel = true
+omit = [
+  "src/loglady/__about__.py",
+]
+
+[tool.coverage.paths]
+loglady = ["src/loglady", "*/loglady/src/loglady"]
+tests = ["tests", "*/loglady/tests"]
+
+[tool.coverage.report]
+exclude_lines = [
+  "no cov",
+  "if __name__ == .__main__.:",
+  "if TYPE_CHECKING:",
+]
