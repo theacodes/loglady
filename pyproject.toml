@@ -36,11 +36,13 @@ dependencies = [
   "coverage[toml]>=6.5",
   "pytest",
 ]
+
 [tool.hatch.envs.default.scripts]
 cov = ["test-cov", "cov-report"]
 cov-report = ["- coverage combine", "coverage report"]
 test = "pytest {args:tests}"
 test-cov = "coverage run -m pytest {args:tests}"
+example = ["python3 -m loglady"]
 
 [tool.hatch.envs.lint]
 detached = true
