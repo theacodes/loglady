@@ -87,8 +87,6 @@ class ThreadedTransport(Transport):
         self._thread.join()
         self._thread = None
 
-        self._q.put({})
-
         if not self._q.empty():
             warn(
                 f"logging thread exited with {self._q.qsize()} logs not yet processed",
