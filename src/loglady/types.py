@@ -20,5 +20,5 @@ type SysExcInfo = tuple[type[BaseException], BaseException, TracebackType | None
 
 class Destination(ABC):
     @abstractmethod
-    def __call__(self, record: Record):
+    def __call__(self, record: Record) -> None:
         raise NotImplementedError()
