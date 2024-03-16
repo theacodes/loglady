@@ -2,28 +2,29 @@
 # Published under the standard MIT License.
 # Full text available at: https://opensource.org/licenses/MIT
 
-from __future__ import annotations
+from collections.abc import Mapping
+from types import MappingProxyType
+from typing import Any, Self
 
-from typing import TYPE_CHECKING, Any, Self
-
-from .types import Context
-
-if TYPE_CHECKING:
-    from .manager import Manager
+from .types import Context, Relay
 
 
 class Logger:
-    def __init__(self, *, manager: Manager, context: Context | None = None):
+    def __init__(self, *, relay: Relay, context: Context | None = None):
         super().__init__()
-        self._manager = manager
+        self._relay = relay
         self._context = context if context is not None else {}
+
+    @property
+    def context(self) -> Mapping[str, Any]:
+        return MappingProxyType(self._context)
 
     def log(self, msg, **record: Any) -> None:
         rec = self._context.copy()
         rec.update(**record)
         rec["msg"] = msg
 
-        self._manager.relay(rec)
+        self._relay(rec)
 
     def trace(self, msg, **record: Any) -> None:
         self.log(msg, level="debug", stack_info=True, **record)
@@ -51,7 +52,7 @@ class Logger:
     def bind(self, **context: Any) -> Self:
         ctx = self._context.copy()
         ctx.update(**context)
-        return self.__class__(manager=self._manager, context=ctx)
+        return self.__class__(relay=self._relay, context=ctx)
 
     def unbind(self, *keys: str) -> Self:
         inst = self.bind()

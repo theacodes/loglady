@@ -29,7 +29,7 @@ class Manager:
         self.transport.destinations = val
 
     def logger(self, **context):
-        return Logger(manager=self, context=context)
+        return Logger(relay=self.relay, context=context)
 
     def start(self):
         self.transport.start()
@@ -45,7 +45,7 @@ class Manager:
 
         return record
 
-    def relay(self, record: Record):
+    def relay(self, record: Record) -> None:
         processed_record = self._apply_middleware(record)
         if processed_record is None:
             return

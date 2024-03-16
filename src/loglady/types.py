@@ -13,6 +13,7 @@ type Context = Record
 type Middleware = Callable[[Record], Record | None]
 type MiddlewareList = Sequence[Middleware]
 type DestinationList = Sequence[Destination]
+type Relay = Callable[[Record], None]
 
 
 class Destination(ABC):
