@@ -42,12 +42,13 @@ class SyncTransport(Transport):
 
 class ThreadedTransport(Transport):
     _STOP = object()
+    _FLUSH = object()
 
     def __init__(self):
         super().__init__()
         self._q = queue.SimpleQueue()
         self._thread: threading.Thread | None = None
-        self._tick = threading.Condition()
+        self._flush_cond = threading.Condition()
 
     @override
     def relay(self, record: Record):
@@ -60,10 +61,12 @@ class ThreadedTransport(Transport):
                 if record is self._STOP:
                     break
 
-                self.process(record)
+                if record is self._FLUSH:
+                    with self._flush_cond:
+                        self._flush_cond.notify_all()
+                    continue
 
-                with self._tick:
-                    self._tick.notify_all()
+                self.process(record)
 
             except queue.Empty:
                 break
@@ -79,7 +82,7 @@ class ThreadedTransport(Transport):
         if self._thread is None:
             return
 
-        self._q.put(self._STOP, block=False)
+        self._q.put(self._STOP)
         self._thread.join()
         self._thread = None
 
@@ -88,6 +91,7 @@ class ThreadedTransport(Transport):
         if self._thread is None:
             return
 
-        while not self._q.empty():
-            with self._tick:
-                _ = self._tick.wait()
+        self._q.put(self._FLUSH)
+
+        with self._flush_cond:
+            _ = self._flush_cond.wait()
