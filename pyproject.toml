@@ -11,7 +11,7 @@ requires-python = ">=3.12"
 license = "MIT"
 keywords = []
 authors = [
-  { name = "Thea Flowers", email = "thea@winterbloom.com" },
+  { name = "Thea Flowers", email = "me@thea.codes" },
 ]
 classifiers = [
   "Development Status :: 4 - Beta",

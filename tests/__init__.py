@@ -1,3 +1,3 @@
-# SPDX-FileCopyrightText: 2024-present Thea Flowers <thea@winterbloom.com>
-#
-# SPDX-License-Identifier: MIT
+# Copyright (c) 2024 Alethea Katherine Flowers.
+# Published under the standard MIT License.
+# Full text available at: https://opensource.org/licenses/MIT
