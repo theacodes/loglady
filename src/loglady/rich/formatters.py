@@ -3,7 +3,7 @@
 # Full text available at: https://opensource.org/licenses/MIT
 
 """
-Formatters for RichRenderer
+Formatters for RichConsoleDestination
 """
 
 from collections.abc import Callable, Iterable

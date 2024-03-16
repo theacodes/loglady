@@ -3,7 +3,7 @@
 # Full text available at: https://opensource.org/licenses/MIT
 
 """
-Rich-based log renderer.
+A logging destination based on Rich's fancy-ass console output.
 """
 
 from collections.abc import Mapping
