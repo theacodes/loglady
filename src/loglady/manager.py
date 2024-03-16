@@ -5,6 +5,7 @@
 
 from collections.abc import Sequence
 
+from .logger import Logger
 from .transport import Transport
 from .types import Destination, Middleware, Record
 
@@ -29,6 +30,9 @@ class Manager:
     @destinations.setter
     def destinations(self, val: Sequence[Destination]):
         self.transport.destinations = val
+
+    def logger(self, **context):
+        return Logger(manager=self, context=context)
 
     def start(self):
         self.transport.start()

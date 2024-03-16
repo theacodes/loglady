@@ -65,7 +65,7 @@ if __name__ == "__main__":
     )
     mgr.start()
 
-    log = Logger(manager=mgr)
+    log = mgr.logger()
     log.debug("this is a debug message")
     log.info("this one is an info message")
     log.warning("watch out, this one is a warning!")

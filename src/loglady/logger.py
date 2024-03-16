@@ -2,11 +2,14 @@
 # Published under the standard MIT License.
 # Full text available at: https://opensource.org/licenses/MIT
 
+from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from .manager import Manager
 from .types import Context
+
+if TYPE_CHECKING:
+    from .manager import Manager
 
 
 class Logger:
