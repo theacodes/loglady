@@ -6,6 +6,7 @@ import queue
 import threading
 from abc import ABC, abstractmethod
 from typing import override
+from warnings import warn
 
 from .types import DestinationList, Record
 
@@ -85,6 +86,14 @@ class ThreadedTransport(Transport):
         self._q.put(self._STOP)
         self._thread.join()
         self._thread = None
+
+        self._q.put({})
+
+        if not self._q.empty():
+            warn(
+                f"logging thread exited with {self._q.qsize()} logs not yet processed",
+                stacklevel=1,
+            )
 
     @override
     def flush(self):

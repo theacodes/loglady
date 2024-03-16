@@ -87,5 +87,3 @@ describes this is redacted. Repeat the word.""",
     demo_magics()
     demo_prefixes(log)
     demo_exc_and_stack(log)
-
-    mgr.stop()

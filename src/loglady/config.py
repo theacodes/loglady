@@ -2,6 +2,8 @@
 # Published under the standard MIT License.
 # Full text available at: https://opensource.org/licenses/MIT
 
+import atexit
+
 from .manager import Manager
 from .middleware import add_call_info, add_exception_and_stack_info, add_thread_info, add_timestamp
 from .rich import RichConsoleDestination
@@ -61,3 +63,13 @@ def manager():
         msg = "LogLady has not been configured!"
         raise RuntimeError(msg)
     return _CONFIG.manager
+
+
+def _shutdown_loglady():
+    if _CONFIG.manager is None:
+        return
+
+    _CONFIG.manager.stop()
+
+
+_ = atexit.register(_shutdown_loglady)
