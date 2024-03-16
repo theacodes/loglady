@@ -9,8 +9,11 @@ _ANIMALS = list(
 )
 
 
-def thread_emoji(thread_id=None):
+def thread_emoji(thread_id: int | threading.Thread | None = None):
     """Cute little helper that assigns each thread a unique emoji."""
+    if isinstance(thread_id, threading.Thread):
+        thread_id = thread_id.native_id
+
     is_main_thread = threading.current_thread() is threading.main_thread()
 
     if thread_id is None and is_main_thread or thread_id == threading.main_thread().native_id:
