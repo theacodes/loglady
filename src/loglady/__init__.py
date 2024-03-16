@@ -2,8 +2,9 @@
 # Published under the standard MIT License.
 # Full text available at: https://opensource.org/licenses/MIT
 
-from .config import configure
+from .config import DEFAULT_MIDDLEWARE, configure
 from .logger import Logger
+from .magics import bind, debug, error, exception, info, log, success, trace, warn, warning
 from .manager import Manager
 from .middleware import add_call_info, add_exception_and_stack_info, add_thread_info, add_timestamp
 from .rich import RichConsoleDestination
@@ -11,10 +12,7 @@ from .transport import SyncTransport, ThreadedTransport, Transport
 from .types import Destination, Middleware, Record
 
 __all__ = [
-    "add_call_info",
-    "add_exception_and_stack_info",
-    "add_thread_info",
-    "add_timestamp",
+    # Types & classes
     "Destination",
     "Logger",
     "Manager",
@@ -24,5 +22,22 @@ __all__ = [
     "SyncTransport",
     "ThreadedTransport",
     "Transport",
+    # Middleware
+    "add_call_info",
+    "add_exception_and_stack_info",
+    "add_thread_info",
+    "add_timestamp",
+    "DEFAULT_MIDDLEWARE",
+    # Magics
+    "bind",
     "configure",
+    "debug",
+    "error",
+    "exception",
+    "info",
+    "log",
+    "success",
+    "trace",
+    "warn",
+    "warning",
 ]
