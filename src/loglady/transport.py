@@ -8,8 +8,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from typing import override
 
-from .destination import Destination
-from .types import Record
+from .types import Destination, Record
 
 
 class Transport(ABC):

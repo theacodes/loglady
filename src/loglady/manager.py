@@ -5,9 +5,8 @@
 
 from collections.abc import Sequence
 
-from .destination import Destination
 from .transport import Transport
-from .types import Middleware, Record
+from .types import Destination, Middleware, Record
 
 
 class Manager:

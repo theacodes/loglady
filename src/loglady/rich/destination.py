@@ -21,8 +21,7 @@ import rich.theme
 import rich.traceback
 from rich.text import Text
 
-from loglady.destination import Destination
-from loglady.types import Record
+from loglady.types import Destination, Record
 
 from . import formatters
 

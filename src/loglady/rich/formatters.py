@@ -23,7 +23,7 @@ from rich.text import Text
 from loglady._thread_emoji import thread_emoji
 from loglady.types import Record
 
-from .stacktrace import Stacktrace
+from ._stacktrace import Stacktrace
 
 type Formatter = Callable[[Record], rich.console.RenderableType | None]
 

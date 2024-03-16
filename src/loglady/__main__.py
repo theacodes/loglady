@@ -5,12 +5,16 @@
 import datetime
 from decimal import Decimal
 
-from ._rich import RichConsoleDestination
-from .logger import Logger
-from .manager import Manager
-from .middleware import add_call_info, add_exception_and_stack_info, add_thread_info
-from .transport import ThreadedTransport
-from .types import Record
+from . import (
+    Logger,
+    Manager,
+    Record,
+    RichConsoleDestination,
+    ThreadedTransport,
+    add_call_info,
+    add_exception_and_stack_info,
+    add_thread_info,
+)
 
 _counter = 0
 
