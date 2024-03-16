@@ -2,7 +2,6 @@
 # Published under the standard MIT License.
 # Full text available at: https://opensource.org/licenses/MIT
 
-import time
 from typing import override
 
 from loglady import Destination, Record
@@ -46,11 +45,9 @@ def test_threaded_transport():
     # Not yet processed, so it shouldn't be in the destination.
     assert len(dest.records) == 0
 
-    # Start the thread, sleep, and check again.
+    # Start the thread, flush, and check again.
     transp.start()
-
-    while transp._q.qsize():  # pyright: ignore[reportPrivateUsage]
-        time.sleep(0)
+    transp.flush()
 
     assert dest.records.pop() == dict(a=42, b="hello!")
 

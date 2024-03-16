@@ -37,6 +37,9 @@ class Manager:
     def stop(self):
         self.transport.stop()
 
+    def flush(self):
+        self.transport.flush()
+
     def _apply_middleware(self, record: Record | None):
         for fn in self.middleware:
             if record is None:
