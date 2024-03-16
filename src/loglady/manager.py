@@ -37,8 +37,16 @@ class Manager:
     def stop(self):
         self.transport.stop()
 
-    def relay(self, record: Record):
+    def _apply_middleware(self, record: Record | None):
         for fn in self.middleware:
+            if record is None:
+                break
             record = fn(record)
 
-        self.transport.relay(record)
+        return record
+
+    def relay(self, record: Record):
+        processed_record = self._apply_middleware(record)
+        if processed_record is None:
+            return
+        self.transport.relay(processed_record)

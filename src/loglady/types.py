@@ -7,4 +7,4 @@ from typing import Any
 
 type Record = dict[str, Any]
 type Context = Record
-type Middleware = Callable[[Record], Record]
+type Middleware = Callable[[Record], Record | None]
