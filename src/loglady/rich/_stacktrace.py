@@ -29,6 +29,8 @@ from rich.table import Table
 from rich.text import Text
 from rich.theme import Theme
 
+from loglady._tracebackhide import check_for_tracebackhide
+
 
 class Stacktrace:
     def __init__(self, stack, *, width: int | None = 100, extra_lines: int = 3, syntax_theme: str = "github-dark"):
@@ -75,6 +77,8 @@ class _Stackframe:
             self.locals = frame.f_locals
         else:
             self.locals = None
+
+        self.is_hidden = (not self.is_from_file) or check_for_tracebackhide(frame)
 
     @property
     def code(self):
@@ -159,7 +163,9 @@ class _PathHighlighter(RegexHighlighter):
 def _iter_stack(stack: FrameType):
     frame = stack
     while frame:
-        yield _Stackframe(frame)
+        sf = _Stackframe(frame)
+        if not sf.is_hidden:
+            yield sf
         frame = frame.f_back
 
 

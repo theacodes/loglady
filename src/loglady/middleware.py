@@ -7,6 +7,7 @@ import sys
 import threading
 from types import FrameType
 
+from ._tracebackhide import check_for_tracebackhide
 from .types import Record
 
 
@@ -41,7 +42,7 @@ def add_call_info(record: Record) -> Record:
     return record
 
 
-def _find_app_frame(stack: FrameType | None = None, ignores=("structlog", "loglady.")) -> FrameType:
+def _find_app_frame(stack: FrameType | None = None, ignores=("loglady.")) -> FrameType:
     """Finds the first frame that isn't part of the logging code"""
     if stack is None:
         # sys._getframe is faster than inspect.currentframe()
@@ -50,10 +51,17 @@ def _find_app_frame(stack: FrameType | None = None, ignores=("structlog", "logla
     f = stack
     name = f.f_globals.get("__name__") or "?"
 
-    while any(name.startswith(i) for i in ignores):
+    while True:
+        traceback_hide = check_for_tracebackhide(f)
+        ignore_hide = any(name.startswith(i) for i in ignores)
+
+        if not (traceback_hide or ignore_hide):
+            break
+
         if f.f_back is None:
             name = "?"
             break
+
         f = f.f_back
         name = f.f_globals.get("__name__") or "?"
 
