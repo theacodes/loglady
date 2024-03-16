@@ -5,18 +5,18 @@
 import queue
 import threading
 from abc import ABC, abstractmethod
+from collections.abc import Sequence
 from typing import override
 
 from .destination import Destination
 from .types import Record
 
 
-class AbstractTransport(ABC):
-    destinations: list[Destination]
+class Transport(ABC):
+    destinations: Sequence[Destination] = ()
 
-    def __init__(self, *, destinations: list[Destination]):
+    def __init__(self):
         super().__init__()
-        self.destinations = destinations
 
     @abstractmethod
     def relay(self, record: Record):
@@ -27,21 +27,23 @@ class AbstractTransport(ABC):
             dest(record)
 
     def start(self):
-        pass
+        return
 
     def stop(self):
-        pass
+        return
 
-class SyncTransport(AbstractTransport):
+
+class SyncTransport(Transport):
     @override
     def relay(self, record: Record):
         self.process(record)
 
-class ThreadedTransport(AbstractTransport):
+
+class ThreadedTransport(Transport):
     _STOP = object()
 
-    def __init__(self, destinations: list["Destination"]):
-        super().__init__(destinations=destinations)
+    def __init__(self):
+        super().__init__()
         self._q = queue.SimpleQueue()
         self._thread: threading.Thread | None = None
 

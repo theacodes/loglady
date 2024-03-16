@@ -2,6 +2,6 @@
 # Published under the standard MIT License.
 # Full text available at: https://opensource.org/licenses/MIT
 
-from .renderer import RichRenderer
+from .renderer import RichConsoleDestination
 
-__all__ = ["RichRenderer"]
+__all__ = ["RichConsoleDestination"]

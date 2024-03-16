@@ -8,6 +8,7 @@ Rich-based log renderer.
 
 from collections.abc import Mapping
 from types import MappingProxyType
+from typing import override
 
 import rich
 import rich.box
@@ -20,6 +21,7 @@ import rich.theme
 import rich.traceback
 from rich.text import Text
 
+from loglady.destination import Destination
 from loglady.types import Record
 
 from . import formatters
@@ -92,7 +94,7 @@ class LineFormatter:
         return table
 
 
-class RichRenderer:
+class RichConsoleDestination(Destination):
     def __init__(
         self,
         *,
@@ -108,6 +110,7 @@ class RichRenderer:
             line_formatter = LineFormatter()
         self.line_formatter = line_formatter
 
+    @override
     def __call__(self, record: Record):
         c = self.console
 

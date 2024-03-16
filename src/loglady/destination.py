@@ -2,8 +2,12 @@
 # Published under the standard MIT License.
 # Full text available at: https://opensource.org/licenses/MIT
 
-from collections.abc import Callable
+from abc import ABC, abstractmethod
 
 from .types import Record
 
-type Destination = Callable[[Record], None]
+
+class Destination(ABC):
+    @abstractmethod
+    def __call__(self, record: Record):
+        raise NotImplementedError()

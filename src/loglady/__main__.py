@@ -5,10 +5,10 @@
 import datetime
 from decimal import Decimal
 
-from ._rich import RichRenderer
+from ._rich import RichConsoleDestination
 from .logger import Logger
 from .manager import Manager
-from .middlewares import add_call_info, add_exception_and_stack_info, add_thread_info
+from .middleware import add_call_info, add_exception_and_stack_info, add_thread_info
 from .transport import ThreadedTransport
 from .types import Record
 
@@ -48,16 +48,16 @@ def demo_exc_and_stack(log: Logger):
 
 
 if __name__ == "__main__":
-    dest = RichRenderer()
-    tp = ThreadedTransport([dest])
+    tp = ThreadedTransport()
     mgr = Manager(
-        tp,
-        middlewares=[
+        transport=tp,
+        middleware=[
             add_mock_timestamp,
             add_thread_info,
             add_exception_and_stack_info,
             add_call_info,
         ],
+        destinations=[RichConsoleDestination()],
     )
     mgr.start()
 
