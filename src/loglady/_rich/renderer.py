@@ -27,9 +27,10 @@ from . import formatters
 _THEME = rich.theme.Theme(
     {
         "log.callsite": "cyan",
-        "log.timestamp": "dim white",
+        "log.timestamp": "grey62",
         "log.thread": "default",
         "log.level": "default",
+        "log.repeated": "grey23",
         "log.level.error": "bold red",
         "log.level.warning": "yellow",
         "log.level.success": "green",
@@ -55,7 +56,7 @@ DEFAULT_FORMATTERS = MappingProxyType(
         timestamp=formatters.NonrepeatedFormatter(formatters.TimestampFormatter(), fill=True),
         callsite=formatters.NonrepeatedFormatter(formatters.CallsiteFormatter()),
         items=formatters.RecordItemsFormatter(),
-        thread=formatters.ThreadInfoFormatter(),
+        thread=formatters.NonrepeatedFormatter(formatters.ThreadInfoFormatter(), fillchar="⋅", fill=True),
         exception=formatters.ExceptionFormatter(),
         stacktrace=formatters.StacktraceFormatter(),
     )
@@ -69,7 +70,7 @@ class LineFormatter:
         table.add_column(style="log.level", width=1, overflow="crop")
         table.add_column(ratio=1, overflow="fold")
         table.add_column(style="log.callsite", justify="right")
-        table.add_column(style="log.thread", width=1, overflow="ignore")
+        table.add_column(style="log.thread", width=1, overflow="ignore", justify="right")
 
         msg_and_items = Text.assemble(formatted["message"], formatted["items"])
         msg_container = rich.containers.Renderables([msg_and_items])

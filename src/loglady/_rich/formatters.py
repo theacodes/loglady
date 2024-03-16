@@ -138,7 +138,7 @@ class CallsiteFormatter:
 
 
 class NonrepeatedFormatter:
-    def __init__(self, fn: Formatter, *, fillchar: str = ".", fill: bool = False):
+    def __init__(self, fn: Formatter, *, fillchar: str = "⋅", fill: bool = False):
         super().__init__()
         self._fn = fn
         self._fillchar = fillchar
@@ -156,9 +156,9 @@ class NonrepeatedFormatter:
                         length = len(new)
                     case _:
                         length = 1
-                new = self._fillchar * length
+                new = Text(self._fillchar * length, style="log.repeated")
             else:
-                new = self._fillchar
+                new = Text(self._fillchar, style="log.repeated")
         else:
             self._last = new
 

@@ -6,7 +6,7 @@
 from typing import Any
 
 from .manager import Manager
-from .types import Context, Record
+from .types import Context
 
 
 class Logger:
@@ -22,7 +22,30 @@ class Logger:
 
         self._manager.relay(rec)
 
-    def bind(self, **context):
+    def trace(self, msg, **record: Any):
+        return self.log(msg, level="debug", stack_info=True, **record)
+
+    def debug(self, msg, **record: Any):
+        return self.log(msg, level="debug", **record)
+
+    def info(self, msg, **record: Any):
+        return self.log(msg, level="info", **record)
+
+    def warning(self, msg, **record: Any):
+        return self.log(msg, level="warning", **record)
+
+    warn = warning
+
+    def success(self, msg, **record: Any):
+        return self.log(msg, level="success", **record)
+
+    def error(self, msg, **record: Any) -> None:
+        return self.log(msg, level="error", **record)
+
+    def exception(self, msg, **record: Any):
+        return self.log(msg, level="error", exc_info=True, **record)
+
+    def bind(self, **context: Any):
         ctx = self._context.copy()
         ctx.update(**context)
         return self.__class__(manager=self._manager, context=ctx)
