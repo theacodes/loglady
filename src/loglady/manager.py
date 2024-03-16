@@ -2,12 +2,9 @@
 # Published under the standard MIT License.
 # Full text available at: https://opensource.org/licenses/MIT
 
-
-from collections.abc import Sequence
-
 from .logger import Logger
 from .transport import Transport
-from .types import Destination, Middleware, Record
+from .types import DestinationList, MiddlewareList, Record
 
 
 class Manager:
@@ -15,8 +12,8 @@ class Manager:
         self,
         *,
         transport: Transport,
-        middleware: list[Middleware],
-        destinations: list[Destination],
+        middleware: MiddlewareList,
+        destinations: DestinationList,
     ):
         super().__init__()
         self.transport = transport
@@ -24,11 +21,11 @@ class Manager:
         self.destinations = destinations
 
     @property
-    def destinations(self) -> Sequence[Destination]:
+    def destinations(self) -> DestinationList:
         return self.transport.destinations
 
     @destinations.setter
-    def destinations(self, val: Sequence[Destination]):
+    def destinations(self, val: DestinationList):
         self.transport.destinations = val
 
     def logger(self, **context):

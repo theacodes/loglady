@@ -2,6 +2,7 @@
 # Published under the standard MIT License.
 # Full text available at: https://opensource.org/licenses/MIT
 
+from .config import configure
 from .logger import Logger
 from .manager import Manager
 from .middleware import add_call_info, add_exception_and_stack_info, add_thread_info, add_timestamp
@@ -23,4 +24,5 @@ __all__ = [
     "SyncTransport",
     "ThreadedTransport",
     "Transport",
+    "configure",
 ]

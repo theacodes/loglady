@@ -7,13 +7,11 @@ from decimal import Decimal
 
 from . import (
     Logger,
-    Manager,
     Record,
-    RichConsoleDestination,
-    ThreadedTransport,
     add_call_info,
     add_exception_and_stack_info,
     add_thread_info,
+    configure,
 )
 
 _counter = 0
@@ -52,18 +50,14 @@ def demo_exc_and_stack(log: Logger):
 
 
 if __name__ == "__main__":
-    tp = ThreadedTransport()
-    mgr = Manager(
-        transport=tp,
+    mgr = configure(
         middleware=[
             add_mock_timestamp,
             add_thread_info,
             add_exception_and_stack_info,
             add_call_info,
-        ],
-        destinations=[RichConsoleDestination()],
+        ]
     )
-    mgr.start()
 
     log = mgr.logger()
     log.debug("this is a debug message")
@@ -77,7 +71,7 @@ if __name__ == "__main__":
         the_answer="42",
         thing=dict(key="value"),
         decimal=Decimal("3.14"),
-        a_class=Manager,
+        a_class=Logger,
     )
 
     log.info(

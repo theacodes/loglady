@@ -5,14 +5,13 @@
 import queue
 import threading
 from abc import ABC, abstractmethod
-from collections.abc import Sequence
 from typing import override
 
-from .types import Destination, Record
+from .types import DestinationList, Record
 
 
 class Transport(ABC):
-    destinations: Sequence[Destination] = ()
+    destinations: DestinationList = ()
 
     def __init__(self):
         super().__init__()
