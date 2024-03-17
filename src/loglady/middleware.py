@@ -12,11 +12,13 @@ from .types import Record
 
 
 def add_timestamp(record: Record) -> Record:
+    """Adds the current timestamp"""
     record["timestamp"] = datetime.datetime.now()  # noqa: DTZ005
     return record
 
 
 def add_thread_info(record: Record) -> Record:
+    """Adds teh current thread native id and name"""
     current_thread = threading.current_thread()
     record["thread_id"] = current_thread.native_id
     record["thread_name"] = current_thread.name
@@ -24,6 +26,11 @@ def add_thread_info(record: Record) -> Record:
 
 
 def add_exception_and_stack_info(record: Record) -> Record:
+    """Adds the current exception info and stacktrace
+
+    The exception info is added if record["exc_info"] is True, likewise,
+    the stacktrace is added if record["stack_info"] is True.
+    """
     if record.pop("exc_info", False):
         record["exception"] = sys.exc_info()
 
@@ -34,6 +41,7 @@ def add_exception_and_stack_info(record: Record) -> Record:
 
 
 def add_call_info(record: Record) -> Record:
+    """Add the calling function's name, filename, module, and lineno"""
     frame = _find_app_frame()
     record["call_filename"] = frame.f_code.co_filename
     record["call_module"] = frame.f_globals["__name__"]

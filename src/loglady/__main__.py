@@ -2,6 +2,12 @@
 # Published under the standard MIT License.
 # Full text available at: https://opensource.org/licenses/MIT
 
+"""Demo for LogLady
+
+Run using:
+    python3 -m loglady
+"""
+
 import datetime
 from decimal import Decimal
 

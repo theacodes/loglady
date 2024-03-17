@@ -26,7 +26,7 @@ from loglady.types import Record
 
 from . import formatters
 
-_THEME = rich.theme.Theme(
+DEFAULT_THEME = rich.theme.Theme(
     {
         "log.callsite": "cyan",
         "log.timestamp": "grey62",
@@ -100,7 +100,7 @@ class RichConsoleDestination(Destination):
         *,
         formatters: Mapping[str, formatters.Formatter] = DEFAULT_FORMATTERS,
         line_formatter=None,
-        theme=_THEME,
+        theme=DEFAULT_THEME,
     ):
         super().__init__()
         self.formatters = formatters

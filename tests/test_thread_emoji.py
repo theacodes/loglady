@@ -5,7 +5,7 @@
 
 import threading
 
-from loglady._thread_emoji import thread_emoji
+from loglady.threading import thread_emoji
 
 
 def test_main_thread_implied():

@@ -20,7 +20,7 @@ import rich.table
 import rich.traceback
 from rich.text import Text
 
-from loglady._thread_emoji import thread_emoji
+from loglady.threading import thread_emoji
 from loglady.types import Record
 
 from ._stacktrace import Stacktrace

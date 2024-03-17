@@ -13,6 +13,8 @@ from .types import Record
 
 
 class Transport(ABC):
+    """Transports are responsible for relaying records to a list of destinations"""
+
     destinations: DestinationList = ()
 
     def __init__(self):
@@ -38,12 +40,23 @@ class Transport(ABC):
 
 
 class SyncTransport(Transport):
+    """A very simple transport that immediately relays records to destinations.
+
+    This is useful for tests but not recommended for real applications.
+    """
+
     @override
     def relay(self, record: Record) -> None:
         self.process(record)
 
 
 class ThreadedTransport(Transport):
+    """A transport that handles relaying in a separate thread.
+
+    This prevents logging calls from blocking, as they only need to queue the
+    record.
+    """
+
     _STOP = object()
     _FLUSH = object()
 

@@ -2,6 +2,8 @@
 # Published under the standard MIT License.
 # Full text available at: https://opensource.org/licenses/MIT
 
+"""Helpers for threading"""
+
 import threading
 
 _ANIMALS = list(

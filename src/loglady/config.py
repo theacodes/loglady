@@ -2,7 +2,11 @@
 # Published under the standard MIT License.
 # Full text available at: https://opensource.org/licenses/MIT
 
-import atexit
+"""Global configuration for LogLady.
+
+This global config is used by magics (the top-level loglady.info, etc.), and
+should be configured at application startup.
+"""
 
 from . import _config_stack
 from .destination import DestinationList
@@ -26,7 +30,17 @@ def configure(
     middleware: MiddlewareList = DEFAULT_MIDDLEWARE,
     destinations: DestinationList | None = None,
     once: bool = False,
-):
+) -> Manager:
+    """Configure LogLady.
+
+    This creates global configuration for LogLady that's then available via the
+    top-level loglady.info(...), loglady.logger(...), etc. methods (these are
+    called "magics").
+
+    This creates a Manager instance and start()s it so that any background
+    stuff can happen. It also installs an atexit() handler to call the Manager's
+    stop() to ensure all logs are written before exit.
+    """
     if once and _config_stack.top():
         return manager()
 
@@ -49,17 +63,9 @@ def configure(
 
 
 def manager() -> Manager:
-    """Get the currently configured log manager"""
+    """Returns the currently configured Manager, or None if not configured."""
     state = _config_stack.top()
     if state is None:
         msg = "LogLady has not been configured!"
         raise RuntimeError(msg)
     return state.manager
-
-
-def _shutdown_loglady():
-    while state := _config_stack.pop():
-        state.manager.stop()
-
-
-_ = atexit.register(_shutdown_loglady)

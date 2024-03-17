@@ -2,9 +2,19 @@
 # Published under the standard MIT License.
 # Full text available at: https://opensource.org/licenses/MIT
 
-"""Magics are sugary convenience methods to quickly and easy log.
+"""Magics are sugary convenience methods to quickly and easily log to your
+heart's content.
 
-Magics all work as long as configure() has been called.
+These are exposed as top-level methods on the loglady module:
+
+    import loglady
+
+    loglady.configure()
+
+    loglady.info("Hello!")
+
+Magics all work as long as configure() has been called. They match the methods
+found on Logger.
 """
 
 from typing import Any

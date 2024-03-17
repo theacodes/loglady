@@ -14,22 +14,28 @@ from .types import Record
 
 
 class Destination(ABC):
+    """A destination is responsible for *outputting* a Record. They're the last link in the chain."""
+
     def flush(self):
+        """If this destination buffers output, flush it and block until all records have been outputted."""
         return
 
     @abstractmethod
     def __call__(self, record: Record) -> None:
+        """Output the given record to the destination."""
         raise NotImplementedError()
 
 
 type DestinationList = Sequence[Destination]
 
 
-type Formatter = Callable[[Record], str]
+type TextIODestinationFormatter = Callable[[Record], str]
 
 
 class TextIODestination(Destination):
-    def __init__(self, io: TextIO, formatter: Formatter | None = None) -> None:
+    """A simple destination that just outputs strings to a TextIO instance."""
+
+    def __init__(self, io: TextIO, formatter: TextIODestinationFormatter | None = None) -> None:
         super().__init__()
         self.io = io
 
@@ -48,6 +54,8 @@ class TextIODestination(Destination):
 
 
 class PrintFormatter:
+    """A simple formatter that just uses print() to format a record."""
+
     def __call__(self, record: Record) -> str:
         out = StringIO()
         print(record, file=out)
@@ -55,6 +63,8 @@ class PrintFormatter:
 
 
 class CaptureDestination(Destination):
+    """A simple destination that records all records."""
+
     def __init__(self):
         super().__init__()
         self.records = []
@@ -64,6 +74,7 @@ class CaptureDestination(Destination):
         self.records.append(record)
 
     def reset(self):
+        """Clear all captured records"""
         self.records = []
 
     def __enter__(self):
@@ -75,6 +86,9 @@ class CaptureDestination(Destination):
 
 
 class LazyDestination(Destination):
+    """A destination that wraps another destination, only creating it when
+    actually needed."""
+
     def __init__(self, factory: Callable[[], Destination]):
         super().__init__()
         self._factory = factory

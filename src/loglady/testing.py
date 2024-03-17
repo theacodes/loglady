@@ -19,6 +19,12 @@ from .types import Record
 
 
 def configure_for_tests(destination: Literal["stdout"] | Literal["capture"] = "stdout"):
+    """Configures LogLady with the bare minimum for operating during tests.
+
+    You can call this in conftest.py to make sure LogLady magics work throughout
+    your codebase during tests.
+    """
+
     if destination == "stdout":
         # We use a lazy destination here to delay binding to sys.stdout as long
         # as possible, which makes it work correctly with stuff like pytest's
