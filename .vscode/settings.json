@@ -13,4 +13,7 @@
     },
     "python.analysis.inlayHints.pytestParameters": true,
     "python.analysis.diagnosticMode": "openFilesOnly",
+    "cSpell.words": [
+        "dests"
+    ],
 }

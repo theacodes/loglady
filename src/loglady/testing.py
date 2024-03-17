@@ -1,0 +1,57 @@
+# Copyright (c) 2024 Alethea Katherine Flowers.
+# Published under the standard MIT License.
+# Full text available at: https://opensource.org/licenses/MIT
+
+"""Helpers for testing with pytest"""
+
+import sys
+from collections.abc import Generator
+from typing import Literal
+
+import pytest
+
+from . import _config_stack, config
+from .destination import CaptureDestination, LazyDestination, TextIODestination
+from .manager import Manager
+from .middleware import add_call_info
+from .transport import SyncTransport
+from .types import Record
+
+
+def configure_for_tests(destination: Literal["stdout"] | Literal["capture"] = "stdout"):
+    if destination == "stdout":
+        # We use a lazy destination here to delay binding to sys.stdout as long
+        # as possible, which makes it work correctly with stuff like pytest's
+        # capsys.
+        def stdout_dest_factory():
+            return TextIODestination(sys.stdout)
+
+        dest = LazyDestination(stdout_dest_factory)
+    else:
+        dest = CaptureDestination()
+
+    manager = config.configure(
+        transport=SyncTransport(),
+        middleware=[add_call_info],
+        destinations=[dest],
+    )
+
+    return manager, dest
+
+
+@pytest.fixture()
+def loglady_stdout() -> Generator[Manager, None, None]:
+    """A fixture that configures loglady for minimal output to stdout"""
+    with _config_stack.rewind():
+        m, _ = configure_for_tests("stdout")
+        yield m
+
+
+@pytest.fixture()
+def loglady_capture() -> Generator[list[Record], None, None]:
+    """A fixture that configures loglady for capturing all logs, yields the list of captured logs"""
+    with _config_stack.rewind():
+        _, cap = configure_for_tests("capture")
+        assert isinstance(cap, CaptureDestination)
+        with cap as cap_list:
+            yield cap_list

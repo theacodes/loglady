@@ -9,17 +9,21 @@ Magics all work as long as configure() has been called.
 
 from typing import Any
 
-from . import config
+from . import _config_stack
 from .logger import Logger
-
-_CACHE = {}
 
 
 def _cached_logger() -> Logger:
-    if (logger := _CACHE.get("logger")) is None:
-        logger = config.manager().logger()
-        _CACHE["logger"] = logger
-    return logger
+    state = _config_stack.top()
+
+    if not state:
+        msg = "You must call loglady.configure() before using the magic log methods."
+        raise RuntimeError(msg)
+
+    if state.logger is None:
+        state.logger = state.manager.logger()
+
+    return state.logger
 
 
 def log(msg, **record: Any) -> None:

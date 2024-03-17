@@ -8,7 +8,8 @@ from abc import ABC, abstractmethod
 from typing import override
 from warnings import warn
 
-from .types import DestinationList, Record
+from .destination import DestinationList
+from .types import Record
 
 
 class Transport(ABC):
@@ -32,7 +33,8 @@ class Transport(ABC):
         return
 
     def flush(self) -> None:
-        return
+        for dest in self.destinations:
+            dest.flush()
 
 
 class SyncTransport(Transport):
@@ -102,3 +104,5 @@ class ThreadedTransport(Transport):
 
         with self._flush_cond:
             _ = self._flush_cond.wait()
+
+        super().flush()

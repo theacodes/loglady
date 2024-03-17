@@ -2,9 +2,10 @@
 # Published under the standard MIT License.
 # Full text available at: https://opensource.org/licenses/MIT
 
+from .destination import DestinationList
 from .logger import Logger
 from .transport import Transport
-from .types import DestinationList, MiddlewareList, Record
+from .types import MiddlewareList, Record
 
 
 class Manager:
