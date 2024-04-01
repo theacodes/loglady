@@ -61,7 +61,7 @@ def _find_app_frame(stack: FrameType | None = None, ignores=("loglady.")) -> Fra
 
     while True:
         traceback_hide = check_for_tracebackhide(f)
-        ignore_hide = any(name.startswith(i) for i in ignores)
+        ignore_hide = name.startswith(ignores)
 
         if not (traceback_hide or ignore_hide):
             break
