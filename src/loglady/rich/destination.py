@@ -67,22 +67,10 @@ DEFAULT_FORMATTERS = MappingProxyType(
 
 class LineFormatter:
     def __call__(self, formatted):
-        table = rich.table.Table.grid(padding=(0, 1), expand=True)
-        table.add_column(style="log.timestamp")
-        table.add_column(style="log.level", width=1, overflow="crop")
-        table.add_column(ratio=1, overflow="fold")
-        table.add_column(style="log.callsite", justify="right")
-        table.add_column(style="log.thread", width=1, overflow="ignore", justify="right")
-
         msg_and_items = Text.assemble(formatted["message"], formatted["items"])
         msg_container = rich.containers.Renderables([msg_and_items])
 
-        if exception := formatted.pop("exception", None):
-            msg_container.append(exception)
-
-        if stack := formatted.pop("stacktrace", None):
-            msg_container.append(stack)
-
+        table = self._make_table()
         table.add_row(
             formatted["timestamp"],
             formatted["level"],
@@ -91,6 +79,37 @@ class LineFormatter:
             formatted["thread"],
         )
 
+        yield table
+
+        if exception := formatted.pop("exception", None):
+            table = self._make_table()
+            table.add_row(
+                " " * len(formatted["timestamp"]),
+                " " * len(formatted["level"]),
+                exception,
+                "",
+                "",
+            )
+            yield table
+
+        if stack := formatted.pop("stacktrace", None):
+            table = self._make_table()
+            table.add_row(
+                " " * len(formatted["timestamp"]),
+                " " * len(formatted["level"]),
+                stack,
+                "",
+                "",
+            )
+            yield table
+
+    def _make_table(self):
+        table = rich.table.Table.grid(padding=(0, 1), expand=True)
+        table.add_column(style="log.timestamp")
+        table.add_column(style="log.level", width=1, overflow="crop")
+        table.add_column(ratio=1, overflow="fold")
+        table.add_column(style="log.callsite", justify="right")
+        table.add_column(style="log.thread", width=1, overflow="ignore", justify="right")
         return table
 
 
@@ -118,6 +137,5 @@ class RichConsoleDestination(Destination):
         for name, fn in self.formatters.items():
             formatted[name] = fn(record)
 
-        line = self.line_formatter(formatted)
-
-        c.print(line)
+        for line in self.line_formatter(formatted):
+            c.print(line)

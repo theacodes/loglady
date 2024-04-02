@@ -33,7 +33,7 @@ from loglady._tracebackhide import check_for_tracebackhide
 
 
 class Stacktrace:
-    def __init__(self, stack, *, width: int | None = 100, extra_lines: int = 3, syntax_theme: str = "github-dark"):
+    def __init__(self, stack, *, width: int | None = None, extra_lines: int = 3, syntax_theme: str = "github-dark"):
         super().__init__()
         self.stack = stack
         self.width = width

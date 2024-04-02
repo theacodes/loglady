@@ -30,7 +30,7 @@ type Formatter = Callable[[Record], rich.console.RenderableType | None]
 
 @dataclass
 class ExceptionFormatter:
-    width: int | None = 100
+    width: int | None = None
     extra_lines: int = 1
     theme: str | None = "github-dark"
     word_wrap: bool = False
@@ -124,6 +124,11 @@ class TimestampFormatter:
 
 
 class CallsiteFormatter:
+    def __init__(self, *, include_module: bool = False, collapse_special: bool = True):
+        super().__init__()
+        self.include_module = include_module
+        self.collapse_special = collapse_special
+
     def __call__(self, record: Record):
         func_name = record.pop("call_fn", None)
 
@@ -134,7 +139,18 @@ class CallsiteFormatter:
         module = record.pop("call_module")
         lineno = record.pop("call_lineno")
 
-        return Text(f"{module}:{func_name}()", style=f"link file://{filename}:{lineno}")
+        if self.include_module:
+            name = f"{module}:{func_name}()"
+        else:
+            name = f"{func_name}()"
+
+        if self.collapse_special:
+            name = name.replace("<module>", f"{module}()")
+            name = name.replace(".<locals>", "()")
+            name = name.replace(".__call__", "()")
+            name = name.replace("()()", "()")
+
+        return Text(name, style=f"link file://{filename}:{lineno}")
 
 
 class NonrepeatedFormatter:
