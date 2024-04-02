@@ -71,6 +71,14 @@ def demo_exc_and_stack(log: loglady.Logger):
     log.trace("& this one has a stacktrace!")
 
 
+class DemoCallsite:
+    def __call__(self):
+        def inner():
+            log.info("this log message is nestled deep!")
+
+        inner()
+
+
 if __name__ == "__main__":
     mgr = loglady.configure(
         middleware=[*loglady.DEFAULT_MIDDLEWARE, add_mock_timestamp],
@@ -106,5 +114,6 @@ describes this is redacted. Repeat the word.""",
     )
 
     demo_magics()
+    DemoCallsite()()
     demo_prefixes(log)
     demo_exc_and_stack(log)
