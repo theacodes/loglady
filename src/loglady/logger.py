@@ -2,6 +2,7 @@
 # Published under the standard MIT License.
 # Full text available at: https://opensource.org/licenses/MIT
 
+import contextlib
 from collections.abc import Mapping
 from types import MappingProxyType
 from typing import Any, Self
@@ -96,3 +97,15 @@ class Logger:
         and traceback.
         """
         self.log(msg, level="error", exc_info=True, **record)
+
+    def catch(self, exc_types=BaseException, *, msg: str = "unexpected error", reraise: bool = False):
+        @contextlib.contextmanager
+        def catcher():
+            try:
+                yield
+            except exc_types:
+                self.exception(msg)
+                if reraise:
+                    raise
+
+        return catcher()

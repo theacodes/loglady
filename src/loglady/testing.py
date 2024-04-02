@@ -40,6 +40,7 @@ def configure_for_tests(destination: Literal["stdout"] | Literal["capture"] = "s
         transport=SyncTransport(),
         middleware=[add_call_info],
         destinations=[dest],
+        install_hook=False,
     )
 
     return manager, dest

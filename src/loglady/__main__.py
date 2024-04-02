@@ -71,6 +71,11 @@ def demo_exc_and_stack(log: loglady.Logger):
     log.trace("& this one has a stacktrace!")
 
 
+def demo_catcher(log: loglady.Logger):
+    with log.catch(msg="this catches exceptions with a context manager"):
+        lol_this_wont_work()  # pyright: ignore[reportUndefinedVariable]  # noqa: F821
+
+
 class DemoCallsite:
     def __call__(self):
         def inner():
@@ -117,3 +122,4 @@ describes this is redacted. Repeat the word.""",
     DemoCallsite()()
     demo_prefixes(log)
     demo_exc_and_stack(log)
+    demo_catcher(log)

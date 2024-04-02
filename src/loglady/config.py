@@ -8,6 +8,8 @@ This global config is used by magics (the top-level loglady.info, etc.), and
 should be configured at application startup.
 """
 
+import sys
+
 from . import _config_stack
 from .destination import DestinationList
 from .manager import Manager
@@ -31,6 +33,7 @@ def configure(
     middleware: MiddlewareList = DEFAULT_MIDDLEWARE,
     destinations: DestinationList | None = None,
     once: bool = False,
+    install_hook: bool = True,
 ) -> Manager:
     """Configure LogLady.
 
@@ -60,6 +63,9 @@ def configure(
 
     _config_stack.push(_config_stack.GlobalState(mgr))
 
+    if install_hook and sys.excepthook == sys.__excepthook__:
+        sys.excepthook = _excepthook
+
     return mgr
 
 
@@ -70,3 +76,25 @@ def manager() -> Manager:
         msg = "LogLady has not been configured!"
         raise RuntimeError(msg)
     return state.manager
+
+
+def _excepthook(exc_type, value, traceback):
+    state = _config_stack.top()
+    if state is None:
+        sys.__excepthook__(exc_type, value, traceback)
+        return
+
+    state.manager.flush()
+
+    state.manager.logger().log(
+        "unhandled exception, sys.excepthook() called",
+        level="error",
+        exception=(
+            exc_type,
+            value,
+            traceback,
+        ),
+    )
+
+    state.manager.flush()
+    state.manager.stop()

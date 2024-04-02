@@ -77,3 +77,16 @@ def bind(**context: Any) -> Logger:
 
 def prefix(prefix: str, **context: Any) -> Logger:
     return _cached_logger().prefix(prefix, **context)
+
+
+def catch(exc_types=BaseException, *, msg: str = "unexpected error", reraise: bool = False):
+    return _cached_logger().catch(exc_types=exc_types, msg=msg, reraise=reraise)
+
+
+def flush():
+    state = _config_stack.top()
+
+    if not state:
+        return
+
+    state.manager.flush()
