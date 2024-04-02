@@ -11,7 +11,7 @@ should be configured at application startup.
 from . import _config_stack
 from .destination import DestinationList
 from .manager import Manager
-from .middleware import add_call_info, add_exception_and_stack_info, add_thread_info, add_timestamp
+from .middleware import add_call_info, add_exception_and_stack_info, add_thread_info, add_timestamp, fancy_prefix_icon
 from .rich import RichConsoleDestination
 from .transport import ThreadedTransport, Transport
 from .types import MiddlewareList
@@ -21,6 +21,7 @@ DEFAULT_MIDDLEWARE = (
     add_thread_info,
     add_exception_and_stack_info,
     add_call_info,
+    fancy_prefix_icon,
 )
 
 

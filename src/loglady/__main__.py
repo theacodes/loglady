@@ -31,12 +31,27 @@ def add_mock_timestamp(record: loglady.Record) -> loglady.Record:
 
 
 def demo_prefixes(log: loglady.Logger):
-    l2 = log.bind(prefix="prefix")
-    l2.debug("this is a debug message")
-    l2.info("this one is an info message", icon="🡰")
-    l2.warning("watch out, this one is a warning!", icon="🡲")
-    l2.success("oh nice, this one is a success!", icon="✓")
-    l2.error("oops, this one is an error", icon="🞷")
+    l2 = log.prefix("prefix")
+    l2.debug("there's a", icon=">")
+    l2.info("bunch of neat", icon="->")
+    l2.warning("icons that can be!", icon="<-")
+    l2.success("used with prefix!", icon="o")
+    l2.error("including arrows, marks, and other fun bits!", icon="...")
+    l2.debug("there's a", icon="v")
+    l2.info("bunch of neat", icon="x")
+    l2.warning("icons that can be!", icon="*")
+    l2.success("used with prefix!", icon="**")
+    l2.error("including arrows, marks, and other fun bits!", icon="+")
+    l2.debug("there's a", icon="s")
+    l2.info("bunch of neat", icon="p")
+    l2.warning("icons that can be!", icon="!!")
+    l2.success("used with prefix!", icon="??")
+    l2.error("including arrows, marks, and other fun bits!", icon="?!")
+    l2.debug("there's a", icon="<3")
+    l2.info("bunch of neat", icon=":)")
+    l2.warning("icons that can be!", icon=":(")
+    l2.success("used with prefix!", icon="f")
+    l2.error("including arrows, marks, and other fun bits!", icon="snow")
 
 
 def demo_magics():

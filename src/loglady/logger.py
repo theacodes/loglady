@@ -43,6 +43,11 @@ class Logger:
             inst._context.pop(key, None)
         return inst
 
+    def prefix(self, prefix: str, **context) -> Self:
+        """Shortcut for self.bind(prefix="...", ...)"""
+        context["prefix"] = prefix
+        return self.bind(**context)
+
     def log(self, msg, **record: Any) -> None:
         """You probably don't wanna call this, as it's the common log method
         used by info(), warning(), etc. I mean, you can call it, I'm a

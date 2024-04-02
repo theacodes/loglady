@@ -74,3 +74,58 @@ def _find_app_frame(stack: FrameType | None = None, ignores=("loglady.")) -> Fra
         name = f.f_globals.get("__name__") or "?"
 
     return f
+
+
+def fancy_prefix_icon(record: Record) -> Record:
+    icon = record.get("icon", None)
+
+    match icon:
+        case ">":
+            icon = "➤"
+        case "->":
+            icon = "🡲"
+        case "<-":
+            icon = "🡰"
+        case "o":
+            icon = "●"
+        case "...":
+            icon = "…"
+        case "v":
+            icon = "✓"
+        case "x":
+            icon = "✗"
+        case "*":
+            icon = "🟊"
+        case "**":
+            icon = "🞷"
+        case "+":
+            icon = "✦"
+        case "s":
+            icon = "§"
+        case "p":
+            icon = "¶"
+        case "!!":
+            icon = "‼︎"
+        case "!?":
+            icon = "⁉︎"
+        case "?!":
+            icon = "⁈"
+        case "??":
+            icon = "⁇"
+        case "<3":
+            icon = "❤︎"
+        case ":)":
+            icon = "☺︎"
+        case ":(":
+            icon = "☹︎"
+        case "f":
+            icon = "⚑"
+        case "snow":
+            icon = "☃︎"
+        case _:
+            pass
+
+    if icon:
+        record["icon"] = icon
+
+    return record

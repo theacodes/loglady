@@ -73,3 +73,7 @@ def exception(msg, **record: Any) -> None:
 
 def bind(**context: Any) -> Logger:
     return _cached_logger().bind(**context)
+
+
+def prefix(prefix: str, **context: Any) -> Logger:
+    return _cached_logger().prefix(prefix, **context)
