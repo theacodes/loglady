@@ -34,7 +34,8 @@ path = "src/loglady/__about__.py"
 [tool.hatch.envs.default]
 dependencies = [
   "coverage[toml]>=6.5",
-  "pytest",
+  "pytest>=8.3.1",
+  "ruff>=0.5.2",
 ]
 
 [tool.hatch.envs.default.scripts]
@@ -43,6 +44,7 @@ cov-report = ["- coverage combine", "coverage report"]
 test = "pytest {args:tests}"
 test-cov = "coverage run -m pytest {args:tests}"
 example = ["python3 -m loglady"]
+style = ["ruff check {args:src}"]
 
 [tool.hatch.envs.lint]
 detached = true
