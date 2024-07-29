@@ -27,6 +27,4 @@ def check_for_tracebackhide(frame: FrameType) -> bool:
     if tbh and callable(tbh):
         tbh = tbh(frame)
 
-    if tbh:
-        return True
-    return False
+    return tbh
