@@ -8,7 +8,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Callable, Sequence
 from functools import cached_property
 from io import StringIO
-from typing import TextIO, override
+from typing import Protocol, override
 
 from .types import Record
 
@@ -32,10 +32,16 @@ type DestinationList = Sequence[Destination]
 type TextIODestinationFormatter = Callable[[Record], str]
 
 
+class _TextIO(Protocol):
+    """The very limited subset of TextIO that TextIODestination depends on."""
+    def write(self, s: str, /) -> int: ...
+    def flush(self) -> None: ...
+
+
 class TextIODestination(Destination):
     """A simple destination that just outputs strings to a TextIO instance."""
 
-    def __init__(self, io: TextIO, formatter: TextIODestinationFormatter | None = None) -> None:
+    def __init__(self, io: _TextIO, formatter: TextIODestinationFormatter | None = None) -> None:
         super().__init__()
         self.io = io
 

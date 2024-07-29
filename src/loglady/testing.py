@@ -11,7 +11,7 @@ from typing import Literal
 import pytest
 
 from . import _config_stack, config
-from .destination import CaptureDestination, LazyDestination, TextIODestination
+from .destination import CaptureDestination, TextIODestination
 from .manager import Manager
 from .middleware import add_call_info
 from .transport import SyncTransport
@@ -26,13 +26,10 @@ def configure_for_tests(destination: Literal["stdout"] | Literal["capture"] = "s
     """
 
     if destination == "stdout":
-        # We use a lazy destination here to delay binding to sys.stdout as long
+        # We use a lazy proxy here to delay binding to sys.stdout as long
         # as possible, which makes it work correctly with stuff like pytest's
         # capsys.
-        def stdout_dest_factory():
-            return TextIODestination(sys.stdout)
-
-        dest = LazyDestination(stdout_dest_factory)
+        dest = TextIODestination(_ProxyLazyIO(lambda: sys.stdout))
     else:
         dest = CaptureDestination()
 
@@ -62,3 +59,15 @@ def loglady_capture() -> Generator[list[Record], None, None]:
         assert isinstance(cap, CaptureDestination)
         with cap as cap_list:
             yield cap_list
+
+
+class _ProxyLazyIO:
+    def __init__(self, resolve):
+        super().__init__()
+        self.resolve = resolve
+
+    def write(self, s: str, /) -> int:
+        return self.resolve().write(s)
+
+    def flush(self):
+        return self.resolve().flush()
