@@ -230,4 +230,4 @@ class ThreadInfoFormatter:
         id_ = record.pop("thread_id", 0)
         _ = record.pop("thread_name", "")
         emoji = thread_emoji(id_)
-        return Text(text=emoji, style=f"link file:///proc/{id_}")
+        return Text(text=emoji)

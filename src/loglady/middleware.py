@@ -20,7 +20,7 @@ def add_timestamp(record: Record) -> Record:
 def add_thread_info(record: Record) -> Record:
     """Adds teh current thread native id and name"""
     current_thread = threading.current_thread()
-    record["thread_id"] = current_thread.native_id
+    record["thread_id"] = current_thread.ident
     record["thread_name"] = current_thread.name
     return record
 
