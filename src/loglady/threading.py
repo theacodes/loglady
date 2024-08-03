@@ -15,14 +15,14 @@ _EMOJI = list(
 def thread_emoji(thread_id: int | threading.Thread | None = None):
     """Cute little helper that assigns each thread a unique emoji."""
     if isinstance(thread_id, threading.Thread):
-        thread_id = thread_id.native_id
+        thread_id = thread_id.ident
 
     is_main_thread = threading.current_thread() is threading.main_thread()
 
-    if thread_id is None and is_main_thread or thread_id == threading.main_thread().native_id:
+    if thread_id is None and is_main_thread or thread_id == threading.main_thread().ident:
         return "⭐️"
 
     if thread_id is None:
-        thread_id = threading.get_native_id()
+        thread_id = threading.get_ident()
 
     return _EMOJI[thread_id % len(_EMOJI)]
