@@ -14,7 +14,7 @@ import linecache
 import os
 from collections.abc import Iterator
 from types import FrameType
-from typing import Any, ClassVar
+from typing import Any
 
 import pygments.token
 from rich import box
@@ -157,7 +157,9 @@ class _Stackframe:
 
 
 class _PathHighlighter(RegexHighlighter):
-    highlights: ClassVar = [r"(?P<inherit>.*/)(?P<bold>.+)"]
+    def __init__(self):
+        super().__init__()
+        self.highlights = [r"(?P<inherit>.*/)(?P<bold>.+)"]
 
 
 def _iter_stack(stack: FrameType):

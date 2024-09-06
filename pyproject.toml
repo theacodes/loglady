@@ -33,9 +33,10 @@ path = "src/loglady/__about__.py"
 
 [tool.hatch.envs.default]
 dependencies = [
-  "coverage[toml]>=6.5",
-  "pytest>=8.3.1",
-  "ruff>=0.5.2",
+  "coverage[toml]>=7.6.1",
+  "pytest>=8.3.2",
+  "ruff>=0.6.4",
+  "pyright>=v1.1.379",
 ]
 
 [tool.hatch.envs.default.scripts]
@@ -45,18 +46,9 @@ test = "pytest {args:tests}"
 test-cov = "coverage run -m pytest {args:tests}"
 example = ["python3 -m loglady"]
 style = ["ruff check {args:src}"]
-
-[tool.hatch.envs.lint]
-detached = true
-dependencies = [
-  "ruff>=1.5.0",
-  "pyright"
-]
-[tool.hatch.envs.lint.scripts]
-all = ["style", "typing"]
-format = ["ruff format --fix {args:.}"]
-style = ["ruff check {args:.}"]
-typing = ["pyright"]
+format = ["ruff format --fix {args:src}"]
+typing = "pyright"
+lint = ["style", "typing"]
 
 [tool.ruff]
 target-version = "py312"
@@ -152,7 +144,7 @@ ban-relative-imports = "parents"
 ]
 
 [tool.pyright]
-include = ["src/glimmer", "tests"]
+include = ["src", "tests"]
 exclude = ["**/__pycache__"]
 reportMissingImports = true
 reportMissingTypeStubs = false

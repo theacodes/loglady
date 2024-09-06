@@ -43,7 +43,7 @@ def configure_for_tests(destination: Literal["stdout"] | Literal["capture"] = "s
     return manager, dest
 
 
-@pytest.fixture()
+@pytest.fixture
 def loglady_stdout() -> Generator[Manager, None, None]:
     """A fixture that configures loglady for minimal output to stdout"""
     with _config_stack.rewind():
@@ -51,7 +51,7 @@ def loglady_stdout() -> Generator[Manager, None, None]:
         yield m
 
 
-@pytest.fixture()
+@pytest.fixture
 def loglady_capture() -> Generator[list[Record], None, None]:
     """A fixture that configures loglady for capturing all logs, yields the list of captured logs"""
     with _config_stack.rewind():
