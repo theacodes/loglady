@@ -2,4 +2,4 @@
 # Published under the standard MIT License.
 # Full text available at: https://opensource.org/licenses/MIT
 
-pytest_plugins = "loglady.testing"
+pytest_plugins = ["loglady.pytest"]

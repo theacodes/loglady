@@ -28,6 +28,9 @@ Documentation = "https://github.com/theacodes/loglady#readme"
 Issues = "https://github.com/theacodes/loglady/issues"
 Source = "https://github.com/theacodes/loglady"
 
+[project.entry-points.pytest11]
+loglady = "loglady.pytest"
+
 [tool.hatch.version]
 path = "src/loglady/__about__.py"
 

@@ -9,13 +9,12 @@ from .utils import assert_dict_subset
 
 def test_capture(loglady_capture):
     loglady.info("Hello!")
-
     assert len(loglady_capture) == 1
-
     assert_dict_subset(loglady_capture[0], dict(msg="Hello!"))
 
 
-def test_stdout(loglady_stdout, capsys):
+def test_stdout(capsys):
     loglady.info("Hello!")
     captured = capsys.readouterr()
-    assert "Hello!" in captured.out
+    # Loglady should *not* be writing to stdout be default during tests
+    assert "Hello!" not in captured.out
