@@ -7,8 +7,7 @@ A logging destination based on Rich's fancy-ass console output.
 """
 
 from collections.abc import Mapping
-from types import MappingProxyType
-from typing import override
+from typing import IO, override
 
 import rich
 import rich.box
@@ -51,8 +50,8 @@ DEFAULT_THEME = rich.theme.Theme(
 )
 
 
-DEFAULT_FORMATTERS = MappingProxyType(
-    dict(
+def make_default_formatters():
+    return dict(
         level=formatters.LevelFormatter(),
         message=formatters.MessageFormatter(),
         timestamp=formatters.NonrepeatedFormatter(formatters.TimestampFormatter(), fill=True),
@@ -62,7 +61,6 @@ DEFAULT_FORMATTERS = MappingProxyType(
         exception=formatters.ExceptionFormatter(),
         stacktrace=formatters.StacktraceFormatter(),
     )
-)
 
 
 class LineFormatter:
@@ -117,13 +115,25 @@ class RichConsoleDestination(Destination):
     def __init__(
         self,
         *,
-        formatters: Mapping[str, formatters.Formatter] = DEFAULT_FORMATTERS,
+        formatters: Mapping[str, formatters.Formatter] | None = None,
         line_formatter=None,
         theme=DEFAULT_THEME,
+        io: IO[str] | None = None,
+        console: rich.console.Console | None = None,
     ):
         super().__init__()
+
+        if formatters is None:
+            formatters = make_default_formatters()
+
         self.formatters = formatters
-        self.console = rich.console.Console(theme=theme)
+
+        if not console:
+            console = rich.console.Console(theme=theme, file=io)
+        else:
+            console.push_theme(theme)
+
+        self.console = console
 
         if line_formatter is None:
             line_formatter = LineFormatter()
