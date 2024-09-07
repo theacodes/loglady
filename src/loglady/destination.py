@@ -34,6 +34,7 @@ type TextIODestinationFormatter = Callable[[Record], str]
 
 class _TextIO(Protocol):
     """The very limited subset of TextIO that TextIODestination depends on."""
+
     def write(self, s: str, /) -> int: ...
     def flush(self) -> None: ...
 
@@ -82,6 +83,12 @@ class CaptureDestination(Destination):
     def reset(self):
         """Clear all captured records"""
         self.records = []
+
+    def playback(self, *destinations: Destination):
+        """Playback recorded records to all given destinations"""
+        for record in self.records:
+            for destination in destinations:
+                destination(record)
 
     def __enter__(self):
         self.reset()
