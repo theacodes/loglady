@@ -33,3 +33,4 @@ pip-log.txt
 sdist/
 venv/
 wheels/
+dist/
