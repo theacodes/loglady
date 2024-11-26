@@ -8,6 +8,7 @@ A logging destination based on Rich's fancy-ass console output.
 
 from collections.abc import Mapping
 from typing import IO, override
+from warnings import warn
 
 import rich
 import rich.box
@@ -145,7 +146,10 @@ class RichConsoleDestination(Destination):
 
         formatted = {}
         for name, fn in self.formatters.items():
-            formatted[name] = fn(record)
+            try:
+                formatted[name] = fn(record)
+            except Exception as err:  # noqa: BLE001
+                warn(f"exception while invoking formatter {fn!r}: {err!r}", stacklevel=1)
 
         for line in self.line_formatter(formatted):
             c.print(line)

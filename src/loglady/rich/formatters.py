@@ -46,7 +46,7 @@ class ExceptionFormatter:
     def __call__(self, record):
         exc = record.pop("exception", None)
 
-        if exc is None:
+        if exc is None or exc == (None, None, None):
             return None
 
         return rich.traceback.Traceback.from_exception(
