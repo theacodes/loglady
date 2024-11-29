@@ -15,7 +15,7 @@ from .destination import DestinationList
 from .manager import Manager
 from .middleware import add_call_info, add_exception_and_stack_info, add_thread_info, add_timestamp, fancy_prefix_icon
 from .rich import RichConsoleDestination
-from .transport import ThreadedTransport, Transport
+from .transport import SyncTransport, ThreadedTransport, Transport
 from .types import MiddlewareList
 
 DEFAULT_MIDDLEWARE = (
@@ -49,7 +49,10 @@ def configure(
         return manager()
 
     if transport is None:
-        transport = ThreadedTransport()
+        if _is_repl():
+            transport = SyncTransport()
+        else:
+            transport = ThreadedTransport()
 
     if destinations is None:
         destinations = [RichConsoleDestination()]
@@ -98,3 +101,7 @@ def _excepthook(exc_type, value, traceback):
 
     state.manager.flush()
     state.manager.stop()
+
+
+def _is_repl() -> bool:
+    return hasattr(sys, "ps1")
