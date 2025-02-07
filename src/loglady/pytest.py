@@ -9,12 +9,11 @@ from io import StringIO
 import pytest
 import rich
 
-import loglady
-import loglady._config_stack
-from loglady.destination import CaptureDestination
-from loglady.rich.destination import RichConsoleDestination
-from loglady.transport import SyncTransport
-from loglady.types import Record
+from . import config, manager_stack
+from .destination import CaptureDestination
+from .rich.destination import RichConsoleDestination
+from .transport import SyncTransport
+from .types import Record
 
 
 @pytest.hookimpl(trylast=True)
@@ -42,9 +41,9 @@ class LogladyPlugin:
 
     def start_global_capturing(self):
         self._global_captured = CaptureDestination()
-        self._manager = loglady.config.configure(
+        self._manager = config.configure(
             transport=SyncTransport(),
-            middleware=loglady.config.DEFAULT_MIDDLEWARE,
+            middleware=config.DEFAULT_MIDDLEWARE,
             destinations=[self._global_captured],
             install_hook=False,
             once=False,
@@ -56,7 +55,7 @@ class LogladyPlugin:
 
         self._manager.flush()
         self._manager.stop()
-        _ = loglady._config_stack.pop()
+        _ = manager_stack.pop()
 
     def read_global_capture(self):
         if self._global_captured is None:

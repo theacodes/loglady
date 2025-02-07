@@ -8,9 +8,8 @@ This global config is used by magics (the top-level loglady.info, etc.), and
 should be configured at application startup.
 """
 
-import sys
-
-from . import _config_stack
+from . import manager_stack
+from ._excepthook import install_excepthook, is_repl
 from .destination import DestinationList
 from .manager import Manager
 from .middleware import add_call_info, add_exception_and_stack_info, add_thread_info, add_timestamp, fancy_prefix_icon
@@ -45,11 +44,11 @@ def configure(
     stuff can happen. It also installs an atexit() handler to call the Manager's
     stop() to ensure all logs are written before exit.
     """
-    if once and _config_stack.top():
-        return manager()
+    if once and manager_stack.has_valid_manager():
+        return manager_stack.current()
 
     if transport is None:
-        if _is_repl():
+        if is_repl():
             transport = SyncTransport()
         else:
             transport = ThreadedTransport()
@@ -64,44 +63,9 @@ def configure(
     )
     mgr.start()
 
-    _config_stack.push(_config_stack.GlobalState(mgr))
+    manager_stack.push(mgr)
 
-    if install_hook and sys.excepthook == sys.__excepthook__:
-        sys.excepthook = _excepthook
+    if not is_repl() and install_hook:
+        install_excepthook()
 
     return mgr
-
-
-def manager() -> Manager:
-    """Returns the currently configured Manager, or None if not configured."""
-    state = _config_stack.top()
-    if state is None:
-        msg = "LogLady has not been configured!"
-        raise RuntimeError(msg)
-    return state.manager
-
-
-def _excepthook(exc_type, value, traceback):
-    state = _config_stack.top()
-    if state is None:
-        sys.__excepthook__(exc_type, value, traceback)
-        return
-
-    state.manager.flush()
-
-    state.manager.logger().log(
-        "unhandled exception, sys.excepthook() called",
-        level="error",
-        exception=(
-            exc_type,
-            value,
-            traceback,
-        ),
-    )
-
-    state.manager.flush()
-    state.manager.stop()
-
-
-def _is_repl() -> bool:
-    return hasattr(sys, "ps1")
