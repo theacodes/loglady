@@ -7,7 +7,6 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Sequence
 from functools import cached_property
-from io import StringIO
 from typing import Protocol, override
 
 from .types import Record
@@ -47,7 +46,7 @@ class TextIODestination(Destination):
         self.io = io
 
         if formatter is None:
-            formatter = PrintFormatter()
+            formatter = PlainFormatter()
         self.formatter = formatter
 
     @override
@@ -60,13 +59,20 @@ class TextIODestination(Destination):
         self.io.flush()
 
 
-class PrintFormatter:
-    """A simple formatter that just uses print() to format a record."""
+class ReprFormatter:
+    """A simple formatter that just uses repr() to format a record."""
 
     def __call__(self, record: Record) -> str:
-        out = StringIO()
-        print(record, file=out)
-        return out.getvalue()
+        return f"{record!r}\n"
+
+
+class PlainFormatter:
+    """A simple formatter that formats the record as a string."""
+
+    def __call__(self, record: Record) -> str:
+        level = record.get("level", "notset")
+        msg = record.pop("msg")
+        return f"{level}: {msg} {record=!r}\n"
 
 
 class CaptureDestination(Destination):
