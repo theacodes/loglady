@@ -13,12 +13,15 @@ from .types import Record
 
 def add_timestamp(record: Record) -> Record:
     """Adds the current timestamp"""
-    record["timestamp"] = datetime.datetime.now()  # noqa: DTZ005
+    record.setdefault("timestamp", datetime.datetime.now().astimezone(None))
     return record
 
 
 def add_thread_info(record: Record) -> Record:
-    """Adds teh current thread native id and name"""
+    """Adds the current thread native id and name"""
+    if "thread_id" in record:
+        return record
+
     current_thread = threading.current_thread()
     record["thread_id"] = current_thread.ident
     record["thread_name"] = current_thread.name
@@ -31,10 +34,10 @@ def add_exception_and_stack_info(record: Record) -> Record:
     The exception info is added if record["exc_info"] is True, likewise,
     the stacktrace is added if record["stack_info"] is True.
     """
-    if record.pop("exc_info", False):
+    if "exception" not in record and record.pop("exc_info", False):
         record["exception"] = sys.exc_info()
 
-    if record.pop("stack_info", False):
+    if "stacktrace" not in record and record.pop("stack_info", False):
         record["stacktrace"] = _find_app_frame()
 
     return record
@@ -42,6 +45,9 @@ def add_exception_and_stack_info(record: Record) -> Record:
 
 def add_call_info(record: Record) -> Record:
     """Add the calling function's name, filename, module, and lineno"""
+    if "call_filename" in record:
+        return record
+
     frame = _find_app_frame()
     record["call_filename"] = frame.f_code.co_filename
     record["call_module"] = frame.f_globals["__name__"]
