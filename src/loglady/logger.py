@@ -5,7 +5,7 @@
 import contextlib
 from collections.abc import Mapping
 from types import MappingProxyType
-from typing import Any, Self
+from typing import Any, Self, override
 
 from .types import Context, Relay
 
@@ -109,3 +109,12 @@ class Logger:
                     raise
 
         return catcher()
+
+    @override
+    def __repr__(self) -> str:
+        return f"<{self.__class__.__name__} context={dict(self.context)!r}>"
+
+    def __rich_repr__(self):
+        yield "context", dict(self.context)
+
+    __rich_repr__.angular = True  # pyright: ignore[reportFunctionMemberAccess]
