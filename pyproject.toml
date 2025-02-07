@@ -189,7 +189,7 @@ reportPropertyTypeMismatch = "warning"
 reportShadowedImports = "warning"
 reportUninitializedInstanceVariable = "warning"
 reportUnnecessaryTypeIgnoreComment = "warning"
-reportUnusedCallResult = "warning"
+reportUnusedCallResult = false
 
 [tool.coverage.run]
 source_pkgs = ["loglady", "tests"]
