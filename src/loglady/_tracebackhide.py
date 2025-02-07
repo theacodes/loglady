@@ -4,6 +4,7 @@
 
 
 import contextlib
+from collections.abc import Callable
 from types import FrameType
 
 
@@ -20,11 +21,11 @@ def check_for_tracebackhide(frame: FrameType) -> bool:
     # all exceptions while trying this nonsense.
     with contextlib.suppress(Exception):
         for namespace in (frame.f_locals, frame.f_globals):
-            tbh = namespace.get("__tracebackhide__", None)
+            tbh: bool | None | Callable[[FrameType], bool] = namespace.get("__tracebackhide__", None)
             if tbh is not None:
                 break
 
-    if tbh and callable(tbh):
+    if callable(tbh):
         tbh = tbh(frame)
 
-    return tbh
+    return tbh if tbh is not None else False

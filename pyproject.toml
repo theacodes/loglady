@@ -146,6 +146,10 @@ ban-relative-imports = "parents"
     "ARG001",  # unused-arguments
 ]
 
+[tool.ruff.lint.flake8-builtins]
+builtins-ignorelist = ["id", "print", "type", "input", "format"]
+builtins-allowed-modules = ["threading", "types"]
+
 [tool.pyright]
 include = ["src", "tests"]
 exclude = ["**/__pycache__"]

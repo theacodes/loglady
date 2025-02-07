@@ -13,6 +13,7 @@ from .transport import SyncTransport, ThreadedTransport, Transport
 from .types import Middleware, Record
 
 __all__ = [
+    "DEFAULT_MIDDLEWARE",
     # Types & classes
     "CaptureDestination",
     "Destination",
@@ -30,19 +31,18 @@ __all__ = [
     "add_exception_and_stack_info",
     "add_thread_info",
     "add_timestamp",
-    "fancy_prefix_icon",
-    "DEFAULT_MIDDLEWARE",
-    # Magics
-    "logger",
     "bind",
     "catch",
     "configure",
     "debug",
     "error",
     "exception",
+    "fancy_prefix_icon",
     "flush",
     "info",
     "log",
+    # Magics
+    "logger",
     "success",
     "trace",
     "warn",

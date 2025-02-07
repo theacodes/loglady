@@ -13,7 +13,7 @@ from .types import Context, Relay
 class Logger:
     """It's the logger! You know how to log!"""
 
-    __slots__ = ("_relay", "_context")
+    __slots__ = ("_context", "_relay")
 
     def __init__(self, *, relay: Relay, context: Context | None = None):
         """
