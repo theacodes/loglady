@@ -36,6 +36,7 @@ class Manager:
         self.transport = transport
         self.middleware = middleware
         self.destinations = destinations
+        self._empty_logger = Logger(relay=self.relay)
 
     @property
     def destinations(self) -> DestinationList:
@@ -47,6 +48,9 @@ class Manager:
 
     def logger(self, **context):
         """Get a new Logger"""
+        if context == {}:
+            return self._empty_logger
+
         return Logger(relay=self.relay, context=context)
 
     def start(self):
