@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from collections import deque
 from collections.abc import Callable, Sequence
 from functools import cached_property
 from typing import Protocol, override
@@ -78,17 +79,26 @@ class PlainFormatter:
 class CaptureDestination(Destination):
     """A simple destination that records all records."""
 
-    def __init__(self):
+    def __init__(self, limit: int | None = None) -> None:
         super().__init__()
-        self.records = []
+        self.limit: int | None = limit
+        self.records: deque[Record] = deque(maxlen=limit)
+        self.discarded_records: int = 0
 
     @override
     def __call__(self, record: Record) -> None:
+        """Capture the record. If the limit is reached, discard the oldest record."""
+        current_len = len(self.records)
         self.records.append(record)
+
+        # If the length didn't change, we discarded a record
+        if len(self.records) == current_len:
+            self.discarded_records += 1
 
     def reset(self):
         """Clear all captured records"""
-        self.records = []
+        self.records = deque(maxlen=self.limit)
+        self.discarded_records = 0
 
     def playback(self, *destinations: Destination):
         """Playback recorded records to all given destinations"""

@@ -6,9 +6,9 @@ from __future__ import annotations
 
 import contextlib
 from collections import UserString
-from collections.abc import Generator
+from collections.abc import Generator, Sequence
 from io import StringIO
-from typing import cast
+from typing import Literal, cast
 
 import pytest
 import rich
@@ -31,7 +31,13 @@ def pytest_addoption(parser):
         "--loglady-disable-deferred-formatting",
         action="store_true",
         default=False,
-        help="Disable deferred formatting of captured logs. Deferred formatting prevent unnecessarily formatting logs that are not ever seen, which can slow down tests.",
+        help="Disable deferred formatting of captured logs. Deferred formatting prevents unnecessarily formatting logs that are not ever seen, which can slow down tests.",
+    )
+    group.addoption(
+        "--loglady-capture-limit",
+        type=int,
+        default=1000,
+        help="Set the limit for captured logs. Having some limit here prevents wasted memory or CPU, which can slow down tests. Set negative to disable the limit.",
     )
 
 
@@ -61,8 +67,13 @@ class LogladyPlugin:
     def disable_deferred_formatting(self) -> bool:
         return self.config.option.loglady_disable_deferred_formatting
 
+    @property
+    def capture_limit(self) -> int | Literal[False]:
+        limit = self.config.option.loglady_capture_limit
+        return limit if limit >= 0 else False
+
     def start_global_capturing(self):
-        self._global_captured = CaptureDestination()
+        self._global_captured = CaptureDestination(limit=self.capture_limit)
         self._manager = config.configure(
             transport=SyncTransport(),
             middleware=config.DEFAULT_MIDDLEWARE,
@@ -80,7 +91,7 @@ class LogladyPlugin:
         _ = manager_stack.pop()
 
     def enable_fixture(self):
-        self._fixture_captured = CaptureDestination()
+        self._fixture_captured = CaptureDestination(limit=self.capture_limit)
         return self._fixture_captured
 
     def disable_fixture(self):
@@ -137,14 +148,24 @@ class LogladyPlugin:
 
     @pytest.hookimpl(wrapper=True, tryfirst=True)
     def pytest_terminal_summary(self, terminalreporter, exitstatus: pytest.ExitCode, config: pytest.Config):
+        failed_or_errored_tests = {
+            report.nodeid for report in [*terminalreporter.getreports("failed"), *terminalreporter.getreports("failed")]
+        }
+
         for category, reports in terminalreporter.stats.items():
             for report in reports:
+                if not hasattr(report, "sections"):
+                    continue
+                test_failed = report.nodeid in failed_or_errored_tests
                 for n, (section, content) in enumerate(report.sections):
                     if isinstance(content, _DeferredCapturedOutput):
-                        if category in ("failed", "error", ""):  # NOTE: "" is used for teardown
+                        if test_failed:
                             report.sections[n] = (section, content.render(use_color=self.use_color))
                         else:
-                            report.sections[n] = (section, content.data + f"({category=}, {section=})")
+                            report.sections[n] = (
+                                section,
+                                content.data + f"({category=}, {section=}), {test_failed=}, {report.nodeid=})",
+                            )
 
         return (yield)
 
@@ -191,13 +212,18 @@ class _DeferredCapturedOutput(UserString):
 
         self.captured.playback(console_dest)
 
+        if self.captured.discarded_records > 0:
+            io.write(
+                f"\n**** Discarded {self.captured.discarded_records} records, use --loglady-capture-limit to control capture limits. ****\n"
+            )
+
         self.captured = None
         self.rendered = io.getvalue()
         return self.rendered
 
 
 @pytest.fixture
-def loglady_capture(request: pytest.FixtureRequest) -> Generator[list[Record], None, None]:
+def loglady_capture(request: pytest.FixtureRequest) -> Generator[Sequence[Record], None, None]:
     """A fixture that captures global loglady logs and yields the list of captured logs"""
     plugin = request.config.pluginmanager.getplugin("loglady-plugin")
     assert isinstance(plugin, LogladyPlugin)
