@@ -31,7 +31,7 @@ def test_add_exception_info():
 
     exc_type, exc, traceback = excinfo
 
-    assert exc_type == RuntimeError
+    assert exc_type is RuntimeError
     assert exc == err
     assert traceback is not None
 
