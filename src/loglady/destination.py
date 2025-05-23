@@ -4,26 +4,25 @@
 
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
 from collections import deque
 from collections.abc import Callable, Sequence
+from dataclasses import InitVar, dataclass, field
 from functools import cached_property
 from typing import Protocol, override
 
 from .types import Record
 
 
-class Destination(ABC):
+class Destination(Protocol):
     """A destination is responsible for *outputting* a Record. They're the last link in the chain."""
 
     def flush(self):
         """If this destination buffers output, flush it and block until all records have been outputted."""
         return
 
-    @abstractmethod
     def __call__(self, record: Record) -> None:
         """Output the given record to the destination."""
-        raise NotImplementedError()
+        ...
 
 
 type DestinationList = Sequence[Destination]
@@ -39,16 +38,12 @@ class _TextIO(Protocol):
     def flush(self) -> None: ...
 
 
+@dataclass(slots=True, kw_only=True)
 class TextIODestination(Destination):
     """A simple destination that just outputs strings to a TextIO instance."""
 
-    def __init__(self, io: _TextIO, formatter: TextIODestinationFormatter | None = None) -> None:
-        super().__init__()
-        self.io = io
-
-        if formatter is None:
-            formatter = PlainFormatter()
-        self.formatter = formatter
+    io: _TextIO
+    formatter: TextIODestinationFormatter = field(default_factory=lambda: PlainFormatter())
 
     @override
     def __call__(self, record: Record) -> None:
@@ -76,14 +71,16 @@ class PlainFormatter:
         return f"{level}: {msg} {record=!r}\n"
 
 
+@dataclass(slots=True, kw_only=True)
 class CaptureDestination(Destination):
     """A simple destination that records all records."""
 
-    def __init__(self, limit: int | None = None) -> None:
-        super().__init__()
-        self.limit: int | None = limit
+    limit: InitVar[int | None] = None
+    records: deque[Record] = field(init=False)
+    discarded_records: int = field(init=False, default=0)
+
+    def __post_init__(self, limit: int | None) -> None:
         self.records: deque[Record] = deque(maxlen=limit)
-        self.discarded_records: int = 0
 
     @override
     def __call__(self, record: Record) -> None:
@@ -97,7 +94,7 @@ class CaptureDestination(Destination):
 
     def reset(self):
         """Clear all captured records"""
-        self.records = deque(maxlen=self.limit)
+        self.records.clear()
         self.discarded_records = 0
 
     def playback(self, *destinations: Destination):
@@ -114,22 +111,17 @@ class CaptureDestination(Destination):
         self.reset()
 
 
+@dataclass()
 class LazyDestination(Destination):
     """A destination that wraps another destination, only creating it when
     actually needed."""
 
-    def __init__(self, factory: Callable[[], Destination]):
-        super().__init__()
-        self._factory = factory
+    factory: Callable[[], Destination]
 
     @cached_property
-    def _wrapped(self):
-        return self._factory()
+    def instance(self) -> Destination:
+        return self.factory()
 
     @override
     def __call__(self, record: Record) -> None:
-        self._wrapped(record)
-
-    @override
-    def flush(self):
-        return super().flush()
+        self.instance(record)

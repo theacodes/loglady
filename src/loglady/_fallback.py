@@ -4,11 +4,14 @@
 
 """Fallback handles managing logs when loglady hasn't been configured."""
 
-import os
+from __future__ import annotations
+
 import sys
+import typing
 import warnings
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Literal, override
+from typing import Final, Literal, override
 
 from .destination import CaptureDestination, Destination, LazyDestination, TextIODestination
 from .manager import Manager
@@ -16,61 +19,73 @@ from .processors import add_timestamp
 from .transport import SyncTransport
 from .types import Record
 
-FALLBACK_MODE = os.environ.get("LOGLADY_FALLBACK_MODE", "stderr")
-
 FallbackMode = Literal["buffer", "stderr", "warn", "error"]
 
 
-class Fallback:
-    def __init__(self, mode: FallbackMode | str | None = None):
-        super().__init__()
-        if mode is None:
-            mode = FALLBACK_MODE
+def validate_fallback_mode(mode: str) -> FallbackMode:
+    mode = mode.lower()
+    valid_options = typing.get_args(FallbackMode)
+    if mode not in valid_options:
+        msg = f'fallback mode must be one of {",".join(valid_options)}, got "{mode}"'
+        raise ValueError(msg)
+    return typing.cast(FallbackMode, mode)
 
-        self.mode = mode
-        self.stderr_destination = LazyDestination(lambda: TextIODestination(sys.stderr))
-        self.capture_destination = CaptureDestination()
-        self.warn_destination = _WarnDestination(
-            msg="loglady.log() called before loglady.configure()", next_destination=self.stderr_destination
+
+@dataclass(slots=True, kw_only=True)
+class Fallback:
+    mode: Final[FallbackMode]
+
+    _stderr_destination: Destination = field(init=False)
+    _capture_destination: CaptureDestination = field(init=False)
+    _warn_destination: _WarnDestination = field(init=False)
+    _buffered_manager: Manager = field(init=False)
+    _stderr_manager: Manager = field(init=False)
+    _warn_manager: Manager = field(init=False)
+    _error_manager: Manager = field(init=False)
+
+    def __post_init__(self):
+        self._stderr_destination = LazyDestination(lambda: TextIODestination(io=sys.stderr))
+        self._capture_destination = CaptureDestination()
+        self._warn_destination = _WarnDestination(
+            msg="loglady.log() called before loglady.configure()", next_destination=self._stderr_destination
         )
-        self.buffered_manager = Manager(
-            transport=SyncTransport(),
+        self._buffered_manager = Manager(
+            transport=SyncTransport(self._capture_destination),
             processors=[add_timestamp],
-            destinations=[self.capture_destination],
         )
-        self.stderr_manager = Manager(
-            transport=SyncTransport(),
+        self._stderr_manager = Manager(
+            transport=SyncTransport(self._stderr_destination),
             processors=[],
-            destinations=[self.stderr_destination],
         )
-        self.warn_manager = Manager(
-            transport=SyncTransport(),
+        self._warn_manager = Manager(
+            transport=SyncTransport(self._warn_destination),
             processors=[],
-            destinations=[self.warn_destination],
         )
-        self.error_manager = Manager(
-            transport=SyncTransport(),
+        self._error_manager = Manager(
+            transport=SyncTransport(_ErrorDestination()),
             processors=[],
-            destinations=[_ErrorDestination()],
         )
 
     @property
     def manager(self):
         match self.mode:
             case "buffer":
-                return self.buffered_manager
+                return self._buffered_manager
             case "stderr":
-                return self.stderr_manager
+                return self._stderr_manager
             case "warn":
-                return self.warn_manager
+                return self._warn_manager
             case "error":
-                return self.error_manager
+                return self._error_manager
             case _:
                 msg = f"fallback mode must be one of 'buffer', 'stderr', 'warn', or 'error', got {self.mode}"
                 raise ValueError(msg)
 
+    def flush(self):
+        self.manager.flush()
+
     def drain_to_new_manager(self, manager: Manager):
-        src = self.capture_destination
+        src = self._capture_destination
         if not src.records:
             return
 
@@ -81,8 +96,8 @@ class Fallback:
         manager.flush()
 
     def drain_remaining_to_warn(self):
-        self.warn_destination.msg = "program exited with buffered logs before loglady.configure() was called"
-        self.drain_to_new_manager(self.warn_manager)
+        self._warn_destination.msg = "program exited with buffered logs before loglady.configure() was called"
+        self.drain_to_new_manager(self._warn_manager)
 
 
 class NotConfiguredWarning(RuntimeWarning):
@@ -104,8 +119,8 @@ class _WarnDestination(Destination):
         if not self.has_warned:
             self.has_warned = True
             warnings.warn(
-                self.msg,
-                NotConfiguredWarning,
+                message=self.msg,
+                category=NotConfiguredWarning,
                 skip_file_prefixes=_WARNING_SKIP_PREFIXES,
                 stacklevel=2,
             )

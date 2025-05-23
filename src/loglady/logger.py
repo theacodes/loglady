@@ -4,25 +4,23 @@
 
 import contextlib
 from collections.abc import Mapping
+from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import Any, Self, override
 
 from .types import Context, Relay
 
 
+@dataclass(slots=True, kw_only=True)
 class Logger:
-    """It's the logger! You know how to log!"""
+    """It's the logger! You know how to log!
 
-    __slots__ = ("_context", "_relay")
+    NOTE: Loggers shouldn't be created directly, instead, use `loglady.configure()` and `loglady.logger()` to get an
+    instance.
+    """
 
-    def __init__(self, *, relay: Relay, context: Context | None = None):
-        """
-        Loggers shouldn't be created directly, instead, use loglady.configure()
-        and loglady.logger() to get an instance.
-        """
-        super().__init__()
-        self._relay = relay
-        self._context = context if context is not None else {}
+    _relay: Relay
+    _context: Context = field(default_factory=dict)
 
     @property
     def context(self) -> Mapping[str, Any]:
@@ -33,9 +31,12 @@ class Logger:
     def bind(self, **context: Any) -> Self:
         """Create a new logger with the given context. The new logger inherits
         this logger's context."""
+        if context is self.context or self.context == context == {}:
+            return self
+
         ctx = self._context.copy()
         ctx.update(**context)
-        return self.__class__(relay=self._relay, context=ctx)
+        return self.__class__(_relay=self._relay, _context=ctx)
 
     def unbind(self, *keys: str) -> Self:
         """Create a new logger without the given keys in the context."""

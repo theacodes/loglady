@@ -4,71 +4,69 @@
 
 import queue
 import threading
-from abc import ABC, abstractmethod
-from typing import override
+from collections.abc import Generator, Iterable
+from dataclasses import dataclass, field
+from typing import ClassVar, Protocol, override
 from warnings import warn
 
-from .destination import DestinationList
+from .destination import Destination, DestinationList
 from .types import Record
 
 
-class Transport(ABC):
+class Transport(Protocol):
     """Transports are responsible for relaying records to a list of destinations"""
 
-    destinations: DestinationList = ()
+    destinations: Destination | DestinationList
 
-    def __init__(self):
-        super().__init__()
-
-    @abstractmethod
-    def relay(self, record: Record) -> None:
-        raise NotImplementedError()
-
-    def process(self, record: Record) -> None:
-        for dest in self.destinations:
-            dest(record)
-
-    def start(self) -> None:
-        return
-
-    def stop(self) -> None:
-        return
-
-    def flush(self) -> None:
-        for dest in self.destinations:
-            dest.flush()
+    def relay(self, record: Record) -> None: ...
+    def flush(self) -> None: ...
+    def shutdown(self) -> None:
+        pass
 
 
+@dataclass(slots=True)
 class SyncTransport(Transport):
-    """A very simple transport that immediately relays records to destinations.
+    """A very simple transport that immediately delivers enqueued records to destinations.
 
     This is useful for tests but not recommended for real applications.
     """
 
+    destinations: Destination | DestinationList = field(default_factory=list)
+
     @override
     def relay(self, record: Record) -> None:
-        self.process(record)
+        for dest in _iter_destinations(self.destinations):
+            dest(record)
+
+    @override
+    def flush(self) -> None:
+        for dest in _iter_destinations(self.destinations):
+            dest.flush()
 
 
+@dataclass(slots=True)
 class ThreadedTransport(Transport):
     """A transport that handles relaying in a separate thread.
 
-    This prevents logging calls from blocking, as they only need to queue the
-    record.
+    This prevents logging calls from blocking, as they only need to queue the record.
     """
 
-    _STOP = object()
-    _FLUSH = object()
+    _STOP: ClassVar = object()
+    _FLUSH: ClassVar = object()
 
-    def __init__(self):
-        super().__init__()
-        self._q = queue.SimpleQueue()
-        self._thread: threading.Thread | None = None
-        self._flush_cond = threading.Condition()
+    destinations: Destination | DestinationList = field(default_factory=list)
+
+    _q: queue.SimpleQueue = field(init=False, default_factory=queue.SimpleQueue)
+    _thread: threading.Thread | None = field(init=False, default=None)
+    _flush_cond: threading.Condition = field(init=False, default_factory=threading.Condition)
 
     @override
     def relay(self, record: Record):
         self._q.put(record)
+
+    def _deliver(self, record: Record):
+        for dest in _iter_destinations(self.destinations):
+            dest(record)
 
     def _thread_main(self):
         while True:
@@ -82,19 +80,18 @@ class ThreadedTransport(Transport):
                         self._flush_cond.notify_all()
                     continue
 
-                self.process(record)
+                self._deliver(record)
 
             except queue.Empty:
                 break
 
-    @override
     def start(self):
         self._thread = threading.Thread(target=self._thread_main)
         self._thread.daemon = True
         self._thread.start()
 
     @override
-    def stop(self):
+    def shutdown(self):
         if self._thread is None:
             return
 
@@ -104,7 +101,8 @@ class ThreadedTransport(Transport):
 
         if not self._q.empty():
             warn(
-                f"logging thread exited with {self._q.qsize()} logs not yet processed",
+                message=f"logging thread exited with {self._q.qsize()} logs not yet processed",
+                category=UserWarning,
                 stacklevel=1,
             )
 
@@ -118,4 +116,13 @@ class ThreadedTransport(Transport):
         with self._flush_cond:
             _ = self._flush_cond.wait()
 
-        super().flush()
+        for destination in _iter_destinations(self.destinations):
+            destination.flush()
+
+
+def _iter_destinations(destination: Destination | DestinationList) -> Generator[Destination]:
+    """Helper to ensure that we always have a list of destinations"""
+    if isinstance(destination, Iterable):
+        yield from destination
+        return
+    yield destination

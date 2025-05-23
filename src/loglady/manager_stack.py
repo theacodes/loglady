@@ -5,20 +5,24 @@
 
 import atexit
 import contextlib
-from typing import Literal
+from dataclasses import InitVar, dataclass, field
 
-from ._fallback import Fallback
+from ._environ import FALLBACK_MODE
+from ._fallback import Fallback, FallbackMode, validate_fallback_mode
 from .logger import Logger
 from .manager import Manager
 from .types import Record
 
 
+@dataclass(slots=True, kw_only=True)
 class ManagerStack:
-    def __init__(self, fallback_mode: Literal["buffer", "stderr", "warn", "error"] | None = None):
-        super().__init__()
+    fallback_mode: InitVar[FallbackMode | None] = None
 
-        self._fallback = Fallback(fallback_mode)
-        self._stack: list[Manager] = []
+    _stack: list[Manager] = field(default_factory=list)
+    _fallback: Fallback = field(init=False)
+
+    def __post_init__(self, fallback_mode: FallbackMode | None):
+        self._fallback = Fallback(mode=validate_fallback_mode(fallback_mode or FALLBACK_MODE))
 
     @property
     def current(self) -> Manager:
@@ -46,18 +50,18 @@ class ManagerStack:
         self._stack.clear()
 
     def flush_all(self) -> None:
-        self._fallback.manager.flush()
+        self._fallback.flush()
         for manager in self._stack:
             manager.flush()
 
     def stop_all(self) -> None:
         for manager in self._stack:
-            manager.stop()
+            manager.shutdown()
 
         self._fallback.drain_remaining_to_warn()
 
     def logger(self, **context) -> Logger:
-        return Logger(relay=self.relay, context=context)
+        return Logger(_relay=self.relay, _context=context)
 
     def relay(self, record: Record) -> None:
         self.current.relay(record)
@@ -74,9 +78,8 @@ class ManagerStack:
         finally:
             assert len(self._stack) >= checkpoint_size
             while len(self._stack) != checkpoint_size:
-                manager = self.pop()
-                if manager is not None:
-                    manager.stop()
+                if (manager := self.pop()) is not None:
+                    manager.flush()
 
 
 _DEFAULT_STACK = ManagerStack()

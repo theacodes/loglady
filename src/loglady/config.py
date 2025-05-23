@@ -52,16 +52,18 @@ def configure(
             transport = SyncTransport()
         else:
             transport = ThreadedTransport()
+            transport.start()
 
     if destinations is None:
         destinations = [RichConsoleDestination()]
 
+    if not transport.destinations:
+        transport.destinations = destinations
+
     mgr = Manager(
         transport=transport,
         processors=processors,
-        destinations=destinations,
     )
-    mgr.start()
 
     manager_stack.push(mgr)
 

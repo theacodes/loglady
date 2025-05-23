@@ -18,17 +18,17 @@ class RelayStub:
 def test_construct():
     relay = RelayStub()
 
-    logger = Logger(relay=relay)
+    logger = Logger(_relay=relay)
     assert logger.context == {}
 
-    logger = Logger(relay=relay, context=dict(a=42))
+    logger = Logger(_relay=relay, _context=dict(a=42))
     assert logger.context == dict(a=42)
 
 
 def test_bind_unbind():
     relay = RelayStub()
 
-    l_root = Logger(relay=relay)
+    l_root = Logger(_relay=relay)
     l1 = l_root.bind(a=42, b="two")
     l2 = l1.bind(a=43, c="three")
     l3 = l1.bind(a=None, d="four")
@@ -45,7 +45,7 @@ def test_bind_unbind():
 
 def test_methods():
     relay = RelayStub()
-    log = Logger(relay=relay)
+    log = Logger(_relay=relay)
 
     log.log("hello", a=42)
     assert relay.records.pop() == dict(msg="hello", a=42)
@@ -69,7 +69,7 @@ def test_methods():
 
 def test_methods_with_context():
     relay = RelayStub()
-    log = Logger(relay=relay).bind(context_a=42)
+    log = Logger(_relay=relay).bind(context_a=42)
 
     log.log("hello")
     assert relay.records.pop() == dict(msg="hello", context_a=42)

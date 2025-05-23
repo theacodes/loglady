@@ -51,4 +51,4 @@ def test_threaded_transport():
 
     assert dest.records.pop() == dict(a=42, b="hello!")
 
-    transp.stop()
+    transp.shutdown()

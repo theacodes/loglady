@@ -75,9 +75,8 @@ class LogladyPlugin:
     def start_global_capturing(self):
         self._global_captured = CaptureDestination(limit=self.capture_limit)
         self._manager = config.configure(
-            transport=SyncTransport(),
+            transport=SyncTransport(self._global_captured),
             processors=config.DEFAULT_PROCESSORS,
-            destinations=[self._global_captured],
             install_hook=False,
             once=False,
         )
@@ -87,7 +86,6 @@ class LogladyPlugin:
             return
 
         self._manager.flush()
-        self._manager.stop()
         _ = manager_stack.pop()
 
     def enable_fixture(self):
@@ -102,12 +100,12 @@ class LogladyPlugin:
             return
 
         assert self._manager is not None
-        self._manager.destinations = [self._fixture_captured]
+        self._manager.transport.destinations = self._fixture_captured
 
     def deactivate_fixture(self):
         assert self._manager is not None
         assert self._global_captured is not None
-        self._manager.destinations = [self._global_captured]
+        self._manager.transport.destinations = self._global_captured
 
     def grab_captured_output(self) -> str | None:
         if self._global_captured is None:

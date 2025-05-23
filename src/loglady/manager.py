@@ -2,12 +2,14 @@
 # Published under the standard MIT License.
 # Full text available at: https://opensource.org/licenses/MIT
 
-from .destination import DestinationList
+from dataclasses import dataclass, field
+
 from .logger import Logger
 from .transport import Transport
 from .types import ProcessorList, Record
 
 
+@dataclass(kw_only=True, slots=True)
 class Manager:
     """Wrangles all the bits of LogLady so that things work!
 
@@ -25,42 +27,18 @@ class Manager:
     stop().
     """
 
-    def __init__(
+    transport: Transport
+    processors: ProcessorList
+    _logger_prototype: Logger = field(init=False)
+
+    def __post_init__(
         self,
-        *,
-        transport: Transport,
-        processors: ProcessorList,
-        destinations: DestinationList,
     ):
-        super().__init__()
-        self.transport = transport
-        self.processors = processors
-        self.destinations = destinations
-        self._empty_logger = Logger(relay=self.relay)
-
-    @property
-    def destinations(self) -> DestinationList:
-        return self.transport.destinations
-
-    @destinations.setter
-    def destinations(self, val: DestinationList):
-        self.transport.destinations = val
+        self._logger_prototype = Logger(_relay=self.relay)
 
     def logger(self, **context):
         """Get a new Logger"""
-        if context == {}:
-            return self._empty_logger
-
-        return Logger(relay=self.relay, context=context)
-
-    def start(self):
-        """Tell the transport to start"""
-        self.transport.start()
-
-    def stop(self):
-        """Flush all destinations and stop the transport"""
-        self.flush()
-        self.transport.stop()
+        return self._logger_prototype.bind(**context)
 
     def flush(self):
         """Ask all destinations to write any pending logs"""
@@ -80,3 +58,7 @@ class Manager:
         if processed_record is None:
             return
         self.transport.relay(processed_record)
+
+    def shutdown(self):
+        self.transport.flush()
+        self.transport.shutdown()
