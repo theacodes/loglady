@@ -109,9 +109,14 @@ class LogladyPlugin:
         assert self._global_captured is not None
         self._manager.destinations = [self._global_captured]
 
-    def grab_captured_output(self) -> str:
-        assert self._global_captured is not None
+    def grab_captured_output(self) -> str | None:
+        if self._global_captured is None:
+            return None
+
         capture = _DeferredCapturedOutput.create(self._global_captured)
+
+        if capture.is_empty():
+            return None
 
         if self.disable_deferred_formatting:
             return capture.render(use_color=self.use_color)
@@ -127,7 +132,8 @@ class LogladyPlugin:
         finally:
             self.deactivate_fixture()
             self.stop_global_capturing()
-            item.add_report_section(when, "loglady", self.grab_captured_output())
+            if (captured := self.grab_captured_output()) is not None:
+                item.add_report_section(when, "loglady", captured)
 
     # Hooks
 
@@ -193,6 +199,9 @@ class _DeferredCapturedOutput(UserString):
         )
         inst.captured = captured
         return inst
+
+    def is_empty(self) -> bool:
+        return self.captured is None or len(self.captured.records) == 0
 
     def render(self, *, use_color: bool = True) -> str:
         if self.rendered is not None:
