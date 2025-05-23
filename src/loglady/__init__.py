@@ -4,6 +4,7 @@
 
 from .config import DEFAULT_PROCESSORS, configure
 from .destination import CaptureDestination, Destination, TextIODestination
+from .errors import LogladyError
 from .logger import Logger
 from .magics import bind, catch, debug, error, exception, flush, info, log, logger, success, trace, warn, warning
 from .manager import Manager
@@ -18,6 +19,7 @@ __all__ = [
     "CaptureDestination",
     "Destination",
     "Logger",
+    "LogladyError",
     "Manager",
     "Processor",
     "Record",

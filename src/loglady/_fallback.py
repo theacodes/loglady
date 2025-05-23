@@ -2,7 +2,7 @@
 # Published under the standard MIT License.
 # Full text available at: https://opensource.org/licenses/MIT
 
-"""Fallback handles managing logs when loglady hasn't been configured."""
+"""Fallback handles managing logs when loglady hasn't been explicitly configured."""
 
 from __future__ import annotations
 
@@ -14,10 +14,12 @@ from pathlib import Path
 from typing import Final, Literal, override
 
 from .destination import CaptureDestination, Destination, LazyDestination, TextIODestination
+from .errors import InvalidFallbackModeError, NotConfiguredError
 from .manager import Manager
 from .processors import add_timestamp
 from .transport import SyncTransport
 from .types import Record
+from .warnings import NotConfiguredWarning
 
 FallbackMode = Literal["buffer", "stderr", "warn", "error"]
 
@@ -26,8 +28,7 @@ def validate_fallback_mode(mode: str) -> FallbackMode:
     mode = mode.lower()
     valid_options = typing.get_args(FallbackMode)
     if mode not in valid_options:
-        msg = f'fallback mode must be one of {",".join(valid_options)}, got "{mode}"'
-        raise ValueError(msg)
+        raise InvalidFallbackModeError(mode=mode, valid_options=valid_options)
     return typing.cast(FallbackMode, mode)
 
 
@@ -77,9 +78,6 @@ class Fallback:
                 return self._warn_manager
             case "error":
                 return self._error_manager
-            case _:
-                msg = f"fallback mode must be one of 'buffer', 'stderr', 'warn', or 'error', got {self.mode}"
-                raise ValueError(msg)
 
     def flush(self):
         self.manager.flush()
@@ -100,10 +98,6 @@ class Fallback:
         self.drain_to_new_manager(self._warn_manager)
 
 
-class NotConfiguredWarning(RuntimeWarning):
-    pass
-
-
 _WARNING_SKIP_PREFIXES = (str(Path(__file__).parent),)
 
 
@@ -119,8 +113,7 @@ class _WarnDestination(Destination):
         if not self.has_warned:
             self.has_warned = True
             warnings.warn(
-                message=self.msg,
-                category=NotConfiguredWarning,
+                NotConfiguredWarning(),
                 skip_file_prefixes=_WARNING_SKIP_PREFIXES,
                 stacklevel=2,
             )
@@ -128,12 +121,7 @@ class _WarnDestination(Destination):
         self.next_destination(record)
 
 
-class NotConfiguredError(RuntimeError):
-    pass
-
-
 class _ErrorDestination(Destination):
     @override
     def __call__(self, record: Record) -> None:
-        msg = "loglady.log() called before loglady.configure()"
-        raise NotConfiguredError(msg)
+        raise NotConfiguredError()

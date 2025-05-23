@@ -11,6 +11,7 @@ from warnings import warn
 
 from .destination import Destination, DestinationList
 from .types import Record
+from .warnings import BackgroundThreadWarning, DestinationErrorWarning, UndeliveredLogsWarning
 
 
 class Transport(Protocol):
@@ -64,9 +65,38 @@ class ThreadedTransport(Transport):
     def relay(self, record: Record):
         self._q.put(record)
 
-    def _deliver(self, record: Record):
-        for dest in _iter_destinations(self.destinations):
-            dest(record)
+    def start(self):
+        self._thread = threading.Thread(target=self._thread_main)
+        self._thread.daemon = True
+        self._thread.start()
+
+    @override
+    def shutdown(self):
+        if self._thread is None:
+            return
+
+        self._q.put(self._STOP)
+        self._thread.join()
+        self._thread = None
+
+        if not self._q.empty():
+            warn(
+                UndeliveredLogsWarning(remaining_logs=self._q.qsize()),
+                stacklevel=1,
+            )
+
+    @override
+    def flush(self):
+        if self._thread is None:
+            return
+
+        self._q.put(self._FLUSH)
+
+        with self._flush_cond:
+            _ = self._flush_cond.wait()
+
+        for destination in _iter_destinations(self.destinations):
+            destination.flush()
 
     def _thread_main(self):
         while True:
@@ -85,39 +115,19 @@ class ThreadedTransport(Transport):
             except queue.Empty:
                 break
 
-    def start(self):
-        self._thread = threading.Thread(target=self._thread_main)
-        self._thread.daemon = True
-        self._thread.start()
+            except Exception as err:
+                warn(
+                    BackgroundThreadWarning(error=err),
+                    stacklevel=1,
+                )
+                raise
 
-    @override
-    def shutdown(self):
-        if self._thread is None:
-            return
-
-        self._q.put(self._STOP)
-        self._thread.join()
-        self._thread = None
-
-        if not self._q.empty():
-            warn(
-                message=f"logging thread exited with {self._q.qsize()} logs not yet processed",
-                category=UserWarning,
-                stacklevel=1,
-            )
-
-    @override
-    def flush(self):
-        if self._thread is None:
-            return
-
-        self._q.put(self._FLUSH)
-
-        with self._flush_cond:
-            _ = self._flush_cond.wait()
-
-        for destination in _iter_destinations(self.destinations):
-            destination.flush()
+    def _deliver(self, record: Record):
+        for dest in _iter_destinations(self.destinations):
+            try:
+                dest(record)
+            except Exception as err:  # noqa: BLE001
+                warn(DestinationErrorWarning(destination=dest, error=err), stacklevel=1)
 
 
 def _iter_destinations(destination: Destination | DestinationList) -> Generator[Destination]:
