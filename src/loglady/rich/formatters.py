@@ -11,12 +11,8 @@ from dataclasses import dataclass
 from types import MappingProxyType, ModuleType
 
 import rich
-import rich.box
 import rich.console
-import rich.containers
 import rich.highlighter
-import rich.pretty
-import rich.table
 import rich.traceback
 from rich.text import Text
 
@@ -34,7 +30,7 @@ class ExceptionFormatter:
     extra_lines: int = 1
     theme: str | None = "github-dark"
     word_wrap: bool = False
-    show_locals: bool = True
+    show_locals: bool = False
     locals_max_length: int = 10
     locals_max_string: int = 80
     locals_hide_dunder: bool = True
@@ -108,7 +104,7 @@ class MessageFormatter:
         if icon:
             icon = f" {icon} "
 
-        formatted = Text.from_markup(text=f"{prefix if prefix else ""}{icon}{msg} ", style=f"log.level.{level}")
+        formatted = Text.from_markup(text=f"{prefix if prefix else ''}{icon}{msg} ", style=f"log.level.{level}")
 
         return formatted
 

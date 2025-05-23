@@ -11,14 +11,10 @@ from typing import IO, override
 from warnings import warn
 
 import rich
-import rich.box
 import rich.console
 import rich.containers
-import rich.highlighter
-import rich.pretty
 import rich.table
 import rich.theme
-import rich.traceback
 from rich.text import Text
 
 from loglady.destination import Destination
