@@ -133,7 +133,9 @@ class LogladyPlugin:
             self.deactivate_fixture()
             self.stop_global_capturing()
             if (captured := self.grab_captured_output()) is not None:
-                item.add_report_section(when, "loglady", captured)
+                # NOTE: The '*' in the key is load-bearing. Without it, pytest will try to use this section when
+                # dropping into `--pdb`, but that doesn't handle the deferred rendering string correctly.
+                item.add_report_section(when, "*loglady*", captured)
 
     # Hooks
 
@@ -155,7 +157,7 @@ class LogladyPlugin:
     @pytest.hookimpl(wrapper=True, tryfirst=True)
     def pytest_terminal_summary(self, terminalreporter, exitstatus: pytest.ExitCode, config: pytest.Config):
         failed_or_errored_tests = {
-            report.nodeid for report in [*terminalreporter.getreports("failed"), *terminalreporter.getreports("failed")]
+            report.nodeid for report in [*terminalreporter.getreports("failed"), *terminalreporter.getreports("error")]
         }
 
         for category, reports in terminalreporter.stats.items():
@@ -170,7 +172,7 @@ class LogladyPlugin:
                         else:
                             report.sections[n] = (
                                 section,
-                                content.data + f"({category=}, {section=}), {test_failed=}, {report.nodeid=})",
+                                f"{content.data} ({category=}, {section=}), {test_failed=}, {report.nodeid=})",
                             )
 
         return (yield)
