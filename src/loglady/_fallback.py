@@ -12,7 +12,7 @@ from typing import Literal, override
 
 from .destination import CaptureDestination, Destination, LazyDestination, TextIODestination
 from .manager import Manager
-from .middleware import add_timestamp
+from .processors import add_timestamp
 from .transport import SyncTransport
 from .types import Record
 
@@ -35,22 +35,22 @@ class Fallback:
         )
         self.buffered_manager = Manager(
             transport=SyncTransport(),
-            middleware=[add_timestamp],
+            processors=[add_timestamp],
             destinations=[self.capture_destination],
         )
         self.stderr_manager = Manager(
             transport=SyncTransport(),
-            middleware=[],
+            processors=[],
             destinations=[self.stderr_destination],
         )
         self.warn_manager = Manager(
             transport=SyncTransport(),
-            middleware=[],
+            processors=[],
             destinations=[self.warn_destination],
         )
         self.error_manager = Manager(
             transport=SyncTransport(),
-            middleware=[],
+            processors=[],
             destinations=[_ErrorDestination()],
         )
 

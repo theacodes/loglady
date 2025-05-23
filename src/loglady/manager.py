@@ -5,7 +5,7 @@
 from .destination import DestinationList
 from .logger import Logger
 from .transport import Transport
-from .types import MiddlewareList, Record
+from .types import ProcessorList, Record
 
 
 class Manager:
@@ -16,7 +16,7 @@ class Manager:
     manager.
 
     A manager gives a Logger life: Any records created by a Logger are sent to
-    the manager. The manager runs the record through middleware and then hands
+    the manager. The manager runs the record through processors and then hands
     it off to the transport. The transport is responsible for sending the record
     to all destinations.
 
@@ -29,12 +29,12 @@ class Manager:
         self,
         *,
         transport: Transport,
-        middleware: MiddlewareList,
+        processors: ProcessorList,
         destinations: DestinationList,
     ):
         super().__init__()
         self.transport = transport
-        self.middleware = middleware
+        self.processors = processors
         self.destinations = destinations
         self._empty_logger = Logger(relay=self.relay)
 
@@ -66,8 +66,8 @@ class Manager:
         """Ask all destinations to write any pending logs"""
         self.transport.flush()
 
-    def _apply_middleware(self, record: Record | None):
-        for fn in self.middleware:
+    def _apply_processors(self, record: Record | None):
+        for fn in self.processors:
             if record is None:
                 break
             record = fn(record)
@@ -75,8 +75,8 @@ class Manager:
         return record
 
     def relay(self, record: Record) -> None:
-        """Run a record through middleware and hand it off to the transport"""
-        processed_record = self._apply_middleware(record)
+        """Run a record through processors and hand it off to the transport"""
+        processed_record = self._apply_processors(record)
         if processed_record is None:
             return
         self.transport.relay(processed_record)

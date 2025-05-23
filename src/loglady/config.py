@@ -12,12 +12,12 @@ from . import manager_stack
 from ._excepthook import install_excepthook, is_repl
 from .destination import DestinationList
 from .manager import Manager
-from .middleware import add_call_info, add_exception_and_stack_info, add_thread_info, add_timestamp, fancy_prefix_icon
+from .processors import add_call_info, add_exception_and_stack_info, add_thread_info, add_timestamp, fancy_prefix_icon
 from .rich import RichConsoleDestination
 from .transport import SyncTransport, ThreadedTransport, Transport
-from .types import MiddlewareList
+from .types import ProcessorList
 
-DEFAULT_MIDDLEWARE = (
+DEFAULT_PROCESSORS = (
     add_timestamp,
     add_thread_info,
     add_exception_and_stack_info,
@@ -29,7 +29,7 @@ DEFAULT_MIDDLEWARE = (
 def configure(
     *,
     transport: Transport | None = None,
-    middleware: MiddlewareList = DEFAULT_MIDDLEWARE,
+    processors: ProcessorList = DEFAULT_PROCESSORS,
     destinations: DestinationList | None = None,
     once: bool = False,
     install_hook: bool = True,
@@ -58,7 +58,7 @@ def configure(
 
     mgr = Manager(
         transport=transport,
-        middleware=middleware,
+        processors=processors,
         destinations=destinations,
     )
     mgr.start()

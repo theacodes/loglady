@@ -86,7 +86,7 @@ class DemoCallsite:
 
 if __name__ == "__main__":
     mgr = loglady.configure(
-        middleware=[*loglady.DEFAULT_MIDDLEWARE, add_mock_timestamp],
+        processors=[*loglady.DEFAULT_PROCESSORS, add_mock_timestamp],
     )
 
     log = mgr.logger()

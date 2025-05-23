@@ -62,8 +62,8 @@ class Logger:
     def trace(self, msg, **record: Any) -> None:
         """Log a debug message and include a stack trace.
 
-        Note that middleware.add_exception_and_stack_info or a similar
-        middleware must be used otherwise it won't actually add the stack info.
+        Note that `processors.add_exception_and_stack_info` or a similar
+        processor must be used otherwise it won't actually add the stack info.
         """
         self.log(msg, level="debug", stack_info=True, **record)
 
@@ -92,8 +92,8 @@ class Logger:
     def exception(self, msg, **record: Any) -> None:
         """Log an error message and include the current exception's traceback
 
-        Note that middleware.add_exception_and_stack_info or a similar
-        middleware must be used otherwise it won't actually add the exception
+        Note that `processors.add_exception_and_stack_info` or a similar
+        processor must be used otherwise it won't actually add the exception
         and traceback.
         """
         self.log(msg, level="error", exc_info=True, **record)

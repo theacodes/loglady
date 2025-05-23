@@ -76,7 +76,7 @@ class LogladyPlugin:
         self._global_captured = CaptureDestination(limit=self.capture_limit)
         self._manager = config.configure(
             transport=SyncTransport(),
-            middleware=config.DEFAULT_MIDDLEWARE,
+            processors=config.DEFAULT_PROCESSORS,
             destinations=[self._global_captured],
             install_hook=False,
             once=False,

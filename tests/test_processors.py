@@ -5,12 +5,12 @@
 
 from types import FrameType
 
-import loglady.middleware
+import loglady.processors
 from loglady.types import SysExcInfo
 
 
 def test_add_stack_info():
-    record = loglady.middleware.add_exception_and_stack_info(dict(stack_info=True))
+    record = loglady.processors.add_exception_and_stack_info(dict(stack_info=True))
 
     stack: FrameType | None = record.get("stacktrace")
     assert stack is not None
@@ -24,7 +24,7 @@ def test_add_exception_info():
     try:
         raise err
     except RuntimeError:
-        record = loglady.middleware.add_exception_and_stack_info(record)
+        record = loglady.processors.add_exception_and_stack_info(record)
 
     excinfo: SysExcInfo | None = record.get("exception")
     assert excinfo is not None
@@ -37,7 +37,7 @@ def test_add_exception_info():
 
 
 def test_add_call_info():
-    record = loglady.middleware.add_call_info(dict())
+    record = loglady.processors.add_call_info(dict())
 
     assert record.get("call_fn") == "test_add_call_info"
     assert record.get("call_filename") == __file__
@@ -47,7 +47,7 @@ def test_add_call_info():
 def test_add_call_info_with_invisible_fn():
     def invisible_fn():
         __tracebackhide__ = True
-        return loglady.middleware.add_call_info(dict())
+        return loglady.processors.add_call_info(dict())
 
     record = invisible_fn()
 

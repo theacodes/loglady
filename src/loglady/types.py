@@ -10,7 +10,7 @@ from typing import Any
 
 type Record = dict[str, Any]
 type Context = Record
-type Middleware = Callable[[Record], Record | None]
-type MiddlewareList = Sequence[Middleware]
+type Processor = Callable[[Record], Record | None]
+type ProcessorList = Sequence[Processor]
 type Relay = Callable[[Record], None]
 type SysExcInfo = tuple[type[BaseException], BaseException, TracebackType | None] | tuple[None, None, None]
