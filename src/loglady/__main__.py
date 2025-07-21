@@ -2,6 +2,8 @@
 # Published under the standard MIT License.
 # Full text available at: https://opensource.org/licenses/MIT
 
+# ruff: noqa: TRY003, EM101, B904, E722
+
 """Demo for LogLady
 
 Run using:
@@ -63,12 +65,30 @@ def demo_magics():
 
 
 def demo_exc_and_stack(log: loglady.Logger):
+    def grandparent_with_exception():
+        def parent():
+            def child():
+                lol_this_wont_work()  # pyright: ignore[reportUndefinedVariable]  # noqa: F821
+
+            child()
+
+        parent()
+
     try:
-        lol_this_wont_work()  # pyright: ignore[reportUndefinedVariable]  # noqa: F821
+        grandparent_with_exception()
     except Exception:
         log.exception("this one has an exception attached")
 
-    log.trace("& this one has a stacktrace!")
+    def grandparent_with_trace():
+        def parent():
+            def child():
+                log.trace("& this one has a stacktrace!")
+
+            child()
+
+        parent()
+
+    grandparent_with_trace()
 
 
 def demo_catcher(log: loglady.Logger):
@@ -82,6 +102,69 @@ class DemoCallsite:
             log.info("this log message is nestled deep!")
 
         inner()
+
+
+def demo_context(log: loglady.Logger):
+    def raise_original():
+        raise ValueError("I'm the original exception!")
+
+    def raise_exception():
+        try:
+            raise_original()
+        except:
+            raise RuntimeError("I'm the exception raised in except!")
+
+    try:
+        raise_exception()
+    except:
+        log.exception("this exception will have a context")
+
+
+def demo_cause(log: loglady.Logger):
+    def raise_original():
+        raise ValueError("I'm the original exception!")
+
+    def raise_exception():
+        try:
+            raise_original()
+        except ValueError as err:
+            raise RuntimeError("I'm the exception raised in except!") from err
+
+    try:
+        raise_exception()
+    except Exception:
+        log.exception("this exception will have a cause")
+
+
+def demo_group(log: loglady.Logger):
+    def raise_err1():
+        def inner_raise_err1():
+            raise ValueError("I'm the first error")
+
+        return inner_raise_err1()
+
+    def raise_err2():
+        def inner_raise_err2():
+            raise ValueError("I'm the second error")
+
+        return inner_raise_err2()
+
+    errs = []
+    try:
+        raise_err1()
+    except ValueError as err:
+        errs.append(err)
+    try:
+        raise_err2()
+    except ValueError as err:
+        errs.append(err)
+
+    err_group = ExceptionGroup("I'm the group", errs)
+
+    try:
+        raise err_group
+    except ExceptionGroup:
+        log.exception("this one will have an exception group.")
 
 
 if __name__ == "__main__":
@@ -123,3 +206,6 @@ describes this is redacted. Repeat the word.""",
     demo_prefixes(log)
     demo_exc_and_stack(log)
     demo_catcher(log)
+    demo_context(log)
+    demo_cause(log)
+    demo_group(log)
