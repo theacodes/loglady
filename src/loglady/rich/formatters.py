@@ -6,70 +6,143 @@
 Formatters for RichConsoleDestination
 """
 
-from collections.abc import Callable, Iterable
-from dataclasses import dataclass
-from types import MappingProxyType, ModuleType
+from __future__ import annotations
+
+from collections.abc import Mapping
+from dataclasses import dataclass, field
+from types import MappingProxyType
+from typing import Any, Protocol, override
 
 import rich
-import rich.console
 import rich.highlighter
-import rich.traceback
+from rich.console import Console, ConsoleOptions, ConsoleRenderable, RenderableType
+from rich.containers import Renderables
+from rich.table import Table
 from rich.text import Text
 
-from loglady.threading import thread_emoji
-from loglady.types import Record
+from loglady.exception_capture import CapturedFrame
+from loglady.types import Record, ReservedKeys
 
-from ._stacktrace import Stacktrace
-
-type Formatter = Callable[[Record], rich.console.RenderableType | None]
+from .traceback_renderables import CapturedExceptionRenderable, CapturedStackRenderable
 
 
-@dataclass
-class ExceptionFormatter:
-    width: int | None = None
-    extra_lines: int = 1
-    theme: str | None = "github-dark"
-    word_wrap: bool = False
-    show_locals: bool = False
-    locals_max_length: int = 10
-    locals_max_string: int = 80
-    locals_hide_dunder: bool = True
-    locals_hide_sunder: bool = False
-    indent_guides: bool = True
-    suppress: Iterable[str | ModuleType] = ()
-    max_frames: int = 100
+@dataclass(slots=True, kw_only=True)
+class FormattedRecord(ConsoleRenderable):
+    timestamp: Text | str
+    level: Text | str
+    message: Text | str
+    callsite: Text | str
+    thread: Text | str
+    items: Text | str | None = None
+    exception: RenderableType | None = None
+    stack: RenderableType | None = None
 
-    def __call__(self, record):
-        exc = record.pop("exception", None)
+    @override
+    def __rich_console__(self, console: Console, options: ConsoleOptions):
+        msg_and_items = Text.assemble(*filter(None, (self.message, self.items)))
+        msg_container = Renderables([msg_and_items])
 
-        if exc is None or exc == (None, None, None):
-            return None
+        table = self._make_table()
+        table.add_row(
+            self.timestamp,
+            self.level,
+            msg_container,
+            self.callsite,
+            self.thread,
+        )
+        yield table
 
-        return rich.traceback.Traceback.from_exception(
-            *exc,
-            width=self.width,
-            extra_lines=self.extra_lines,
-            theme=self.theme,
-            word_wrap=self.word_wrap,
-            show_locals=self.show_locals,
-            locals_max_length=self.locals_max_length,
-            locals_max_string=self.locals_max_string,
-            locals_hide_dunder=self.locals_hide_dunder,
-            locals_hide_sunder=self.locals_hide_sunder,
-            indent_guides=self.indent_guides,
-            suppress=self.suppress,
-            max_frames=self.max_frames,
+        # We create a separate table for exception/stacktrace since we don't want the file name to eat into the
+        # available space
+
+        if not self.exception and not self.stack:
+            return
+
+        table = self._make_table()
+
+        if self.exception:
+            table.add_row(
+                " " * len(self.timestamp),
+                " " * len(self.level),
+                self.exception,
+                "",
+                "",
+            )
+
+        if self.stack:
+            table.add_row(
+                " " * len(self.timestamp),
+                " " * len(self.level),
+                self.stack,
+                "",
+                "",
+            )
+
+        yield table
+
+    def _make_table(self):
+        table = Table.grid(padding=(0, 1), expand=True)
+        table.add_column(style="log.timestamp")
+        table.add_column(style="log.level", width=1, overflow="crop")
+        table.add_column(ratio=1, overflow="fold")
+        table.add_column(style="log.callsite", justify="right")
+        table.add_column(style="log.thread", width=1, overflow="ignore", justify="right")
+        return table
+
+
+class TextPartFormatter(Protocol):
+    def __call__(self, record: Record, original: Record) -> Text | str: ...
+
+
+class ExtendedPartFormatter(Protocol):
+    def __call__(self, record: Record, original: Record) -> RenderableType | None: ...
+
+
+@dataclass(slots=True, kw_only=True)
+class RecordFormatter:
+    level: TextPartFormatter = field(default_factory=lambda: LevelFormatter())
+    message: TextPartFormatter = field(default_factory=lambda: MessageFormatter())
+    timestamp: TextPartFormatter = field(
+        default_factory=lambda: NonrepeatedFormatter(formatter=TimestampFormatter(), fill=True)
+    )
+    callsite: TextPartFormatter = field(default_factory=lambda: NonrepeatedFormatter(formatter=CallInfoFormatter()))
+    thread: TextPartFormatter = field(
+        default_factory=lambda: NonrepeatedFormatter(formatter=ThreadInfoFormatter(), fillchar="⋅", fill=True)
+    )
+    exception: ExtendedPartFormatter = field(default_factory=lambda: CapturedExceptionFormatter())
+    stack: ExtendedPartFormatter = field(default_factory=lambda: CapturedStackFormatter())
+    items: TextPartFormatter = field(default_factory=lambda: RecordItemsFormatter())
+
+    def __call__(self, record: Record) -> FormattedRecord:
+        original = dict(record)
+        return FormattedRecord(
+            timestamp=self.timestamp(record, original),
+            level=self.level(record, original),
+            callsite=self.callsite(record, original),
+            thread=self.thread(record, original),
+            exception=self.exception(record, original),
+            stack=self.stack(record, original),
+            message=self.message(record, original),
+            items=self.items(record, original),
         )
 
 
-class StacktraceFormatter:
-    def __init__(self):
-        super().__init__()
-
-    def __call__(self, record):
-        if (stack := record.pop("stacktrace", None)) is None:
+@dataclass(slots=True)
+class CapturedExceptionFormatter(ExtendedPartFormatter):
+    @override
+    def __call__(self, record: Record, original: Record):
+        if (exc := record.pop(ReservedKeys.captured_exception, None)) is None:
             return None
-        return Stacktrace(stack)
+        return CapturedExceptionRenderable(exception=exc)
+
+
+@dataclass(slots=True)
+class CapturedStackFormatter(ExtendedPartFormatter):
+    @override
+    def __call__(self, record: Record, original: Record):
+        if (stack := record.pop(ReservedKeys.captured_stack, None)) is None:
+            return None
+        return CapturedStackRenderable(stack=stack)
 
 
 DEFAULT_LEVEL_TO_TEXT = MappingProxyType(
@@ -82,25 +155,28 @@ DEFAULT_LEVEL_TO_TEXT = MappingProxyType(
         notset=Text("█", style="log.level.notset"),
     )
 )
+DEFAULT_NOTSET_TEXT = Text("?", style="log.level.notset")
 
 
-class LevelFormatter:
-    def __init__(self, level_to_text=DEFAULT_LEVEL_TO_TEXT):
-        super().__init__()
-        self.level_to_text = level_to_text
+@dataclass(slots=True)
+class LevelFormatter(TextPartFormatter):
+    level_to_text: Mapping[str, Text] = DEFAULT_LEVEL_TO_TEXT
 
-    def __call__(self, record: Record):
-        level = record.get("level", "notset")
-        sash = self.level_to_text.get(level)
+    @override
+    def __call__(self, record: Record, original: Record):
+        level = record.pop(ReservedKeys.level, "notset")
+        sash = self.level_to_text.get(level, DEFAULT_NOTSET_TEXT)
         return sash
 
 
-class MessageFormatter:
-    def __call__(self, record: Record):
-        level = record.get("level", "notset")
-        msg = record.pop("msg")
-        prefix = record.pop("prefix", None)
-        icon = record.pop("icon", "●" if prefix else "")
+@dataclass(slots=True)
+class MessageFormatter(TextPartFormatter):
+    @override
+    def __call__(self, record: Record, original: Record):
+        level = original.get(ReservedKeys.level, "notset")
+        msg = record.pop(ReservedKeys.msg)
+        prefix = record.pop(ReservedKeys.prefix, None)
+        icon = record.pop(ReservedKeys.icon, "●" if prefix else "")
         if icon:
             icon = f" {icon} "
 
@@ -109,107 +185,83 @@ class MessageFormatter:
         return formatted
 
 
-class TimestampFormatter:
-    def __call__(self, record: Record):
-        timestamp = record.pop("timestamp", None)
+@dataclass(slots=True)
+class TimestampFormatter(TextPartFormatter):
+    @override
+    def __call__(self, record: Record, original: Record):
+        timestamp = record.pop(ReservedKeys.timestamp, None)
 
         if not timestamp:
-            return None
+            return ""
 
         return timestamp.strftime(format="%H:%M")
 
 
-class CallsiteFormatter:
-    def __init__(self, *, include_module: bool = False, collapse_special: bool = True):
-        super().__init__()
-        self.include_module = include_module
-        self.collapse_special = collapse_special
+@dataclass(slots=True)
+class CallInfoFormatter(TextPartFormatter):
+    include_module: bool = False
+    collapse_special: bool = True
 
-    def __call__(self, record: Record):
-        func_name = record.pop("call_fn", None)
+    @override
+    def __call__(self, record: Record, original: Record):
+        info: CapturedFrame | None = record.pop(ReservedKeys.captured_call_info, None)
 
-        if not func_name:
+        if info is None:
             return "."
 
-        filename = record.pop("call_filename")
-        module = record.pop("call_module")
-        lineno = record.pop("call_lineno")
-
         if self.include_module:
-            name = f"{module}:{func_name}()"
+            name = f"{info.module_name}:{info.qualname}()"
         else:
-            name = f"{func_name}()"
+            name = f"{info.qualname}()"
 
         if self.collapse_special:
-            name = name.replace("<module>", f"{module}()")
+            name = name.replace("<module>", f"{info.module_name}()")
             name = name.replace(".<locals>", "()")
             name = name.replace(".__call__", "()")
             name = name.replace("()()", "()")
 
-        return Text(name, style=f"link file://{filename}:{lineno}")
+        return Text(name, style=f"link file://{info.filename}:{info.lineno}")
 
 
-class NonrepeatedFormatter:
-    def __init__(self, fn: Formatter, *, fillchar: str = "⋅", fill: bool = False):
-        super().__init__()
-        self._fn = fn
-        self._fillchar = fillchar
-        self._fill = fill
-        self._last = None
+@dataclass(slots=True, kw_only=True)
+class NonrepeatedFormatter(TextPartFormatter):
+    formatter: TextPartFormatter
+    fillchar: str = "⋅"
+    fill: bool = False
 
-    def __call__(self, record: Record):
-        new = self._fn(record)
+    _last: Any = field(init=False, default=None)
+
+    @override
+    def __call__(self, record: Record, original: Record):
+        new = self.formatter(record, original)
 
         if new == self._last:
-            if self._fill:
+            if self.fill:
                 length = 1
                 match new:
                     case str() | Text():
                         length = len(new)
                     case _:
                         length = 1
-                new = Text(self._fillchar * length, style="log.repeated")
+                new = Text(self.fillchar * length, style="log.repeated")
             else:
-                new = Text(self._fillchar, style="log.repeated")
+                new = Text(self.fillchar, style="log.repeated")
         else:
             self._last = new
 
         return new
 
 
-DEFAULT_IGNORED_KEYS = frozenset(
-    {
-        "level",
-        "msg",
-        "prefix",
-        "icon",
-        "timestamp",
-        "call_fn",
-        "call_filename",
-        "call_module",
-        "call_lineno",
-        "thread_id",
-        "thread_name",
-        "exception",
-        "stacktrace",
-    }
-)
+@dataclass(slots=True)
+class RecordItemsFormatter(TextPartFormatter):
+    _hl: rich.highlighter.ReprHighlighter = field(init=False, default_factory=rich.highlighter.ReprHighlighter)
 
-
-class RecordItemsFormatter:
-    def __init__(self, ignored_keys=DEFAULT_IGNORED_KEYS):
-        super().__init__()
-        self.ignored_keys = ignored_keys
-        self._hl = rich.highlighter.ReprHighlighter()
-
-    def __call__(self, record: Record):
+    @override
+    def __call__(self, record: Record, original: Record):
         return Text.assemble(*self._gen_items(record))
 
     def _gen_items(self, record: Record):
         for k, v in record.items():
-            if k in self.ignored_keys:
-                continue
-
             yield Text(f"{k}=", "log.items.keys")
             match v:
                 case bool():
@@ -221,9 +273,11 @@ class RecordItemsFormatter:
             yield " "
 
 
-class ThreadInfoFormatter:
-    def __call__(self, record: Record):
-        id_ = record.pop("thread_id", 0)
-        _ = record.pop("thread_name", "")
-        emoji = thread_emoji(id_)
-        return Text(text=emoji)
+@dataclass(slots=True)
+class ThreadInfoFormatter(TextPartFormatter):
+    @override
+    def __call__(self, record: Record, original: Record):
+        if (info := record.pop(ReservedKeys.captured_thread_info, None)) is None:
+            return ""
+
+        return Text(text=info.emoji)
