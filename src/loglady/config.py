@@ -8,21 +8,20 @@ This global config is used by magics (the top-level loglady.info, etc.), and
 should be configured at application startup.
 """
 
-from . import manager_stack
+from . import manager_stack, processors
 from ._excepthook import install_excepthook, is_repl
 from .destination import DestinationList
 from .manager import Manager
-from .processors import add_call_info, add_exception_and_stack_info, add_thread_info, add_timestamp, fancy_prefix_icon
 from .rich import RichConsoleDestination
 from .transport import SyncTransport, ThreadedTransport, Transport
 from .types import ProcessorList
 
 DEFAULT_PROCESSORS = (
-    add_timestamp,
-    add_thread_info,
-    add_exception_and_stack_info,
-    add_call_info,
-    fancy_prefix_icon,
+    processors.add_timestamp,
+    processors.add_thread_info,
+    processors.add_call_info,
+    processors.fancy_prefix_icon,
+    processors.eagerly_capture_exceptions,
 )
 
 

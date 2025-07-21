@@ -3,83 +3,47 @@
 # Full text available at: https://opensource.org/licenses/MIT
 
 import datetime
-import sys
-import threading
-from types import FrameType
 
-from ._tracebackhide import check_for_tracebackhide
-from .types import Record
+from .exception_capture import capture_exception
+from .stack_capture import CapturedFrame
+from .thread_capture import CapturedThreadInfo
+from .types import Record, ReservedKeys
+
+
+def eagerly_capture_exceptions(record: Record) -> Record:
+    """Eagerly captures exception info for any exceptions passed into record items.
+
+    Typically you'd use `logger.exception` to explicitly capture a single exception, but sometimes you might do
+    something silly like `logger.info("hmm", err=ValueError(...))`. That's where this comes in - it will eagerly
+    convert those values into `CapturedExceptions`.
+    """
+    for k, v in record.items():
+        if isinstance(v, BaseException):
+            record[k] = capture_exception(v, capture_lines=False, capture_locals=False, capture_traceback=False)
+
+    return record
 
 
 def add_timestamp(record: Record) -> Record:
     """Adds the current timestamp"""
-    record.setdefault("timestamp", datetime.datetime.now().astimezone(None))
+    if ReservedKeys.timestamp not in record:
+        record[ReservedKeys.timestamp] = datetime.datetime.now().astimezone(None)
     return record
 
 
 def add_thread_info(record: Record) -> Record:
     """Adds the current thread native id and name"""
-    if "thread_id" in record:
-        return record
-
-    current_thread = threading.current_thread()
-    record["thread_id"] = current_thread.ident
-    record["thread_name"] = current_thread.name
-    return record
-
-
-def add_exception_and_stack_info(record: Record) -> Record:
-    """Adds the current exception info and stacktrace
-
-    The exception info is added if record["exc_info"] is True, likewise,
-    the stacktrace is added if record["stack_info"] is True.
-    """
-    if "exception" not in record and record.pop("exc_info", False):
-        record["exception"] = sys.exc_info()
-
-    if "stacktrace" not in record and record.pop("stack_info", False):
-        record["stacktrace"] = _find_app_frame()
-
+    if ReservedKeys.captured_thread_info not in record:
+        record[ReservedKeys.captured_thread_info] = CapturedThreadInfo.create()
     return record
 
 
 def add_call_info(record: Record) -> Record:
     """Add the calling function's name, filename, module, and lineno"""
-    if "call_filename" in record:
-        return record
-
-    frame = _find_app_frame()
-    record["call_filename"] = frame.f_code.co_filename
-    record["call_module"] = frame.f_globals["__name__"]
-    record["call_fn"] = frame.f_code.co_qualname
-    record["call_lineno"] = frame.f_lineno
+    if ReservedKeys.captured_call_info not in record:
+        frame = CapturedFrame.create_from_caller()
+        record[ReservedKeys.captured_call_info] = frame
     return record
-
-
-def _find_app_frame(stack: FrameType | None = None, ignores=("loglady.")) -> FrameType:
-    """Finds the first frame that isn't part of the logging code"""
-    if stack is None:
-        # sys._getframe is faster than inspect.currentframe()
-        stack = sys._getframe(1)  # pyright: ignore[reportPrivateUsage]
-
-    f = stack
-    name = f.f_globals.get("__name__") or "?"
-
-    while True:
-        traceback_hide = check_for_tracebackhide(f)
-        ignore_hide = name.startswith(ignores)
-
-        if not (traceback_hide or ignore_hide):
-            break
-
-        if f.f_back is None:
-            name = "?"
-            break
-
-        f = f.f_back
-        name = f.f_globals.get("__name__") or "?"
-
-    return f
 
 
 def fancy_prefix_icon(record: Record) -> Record:

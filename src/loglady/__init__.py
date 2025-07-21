@@ -5,11 +5,14 @@
 from .config import DEFAULT_PROCESSORS, configure
 from .destination import CaptureDestination, Destination, TextIODestination
 from .errors import LogladyError
+from .exception_capture import CapturedException
 from .logger import Logger
 from .magics import bind, catch, debug, error, exception, flush, info, log, logger, success, trace, warn, warning
 from .manager import Manager
-from .processors import add_call_info, add_exception_and_stack_info, add_thread_info, add_timestamp, fancy_prefix_icon
+from .processors import add_call_info, add_thread_info, add_timestamp, fancy_prefix_icon
 from .rich import RichConsoleDestination
+from .stack_capture import CapturedFrame, CapturedStack
+from .thread_capture import CapturedThreadInfo
 from .transport import SyncTransport, ThreadedTransport, Transport
 from .types import Processor, Record
 
@@ -17,6 +20,10 @@ __all__ = [
     "DEFAULT_PROCESSORS",
     # Types & classes
     "CaptureDestination",
+    "CapturedException",
+    "CapturedFrame",
+    "CapturedStack",
+    "CapturedThreadInfo",
     "Destination",
     "Logger",
     "LogladyError",
@@ -30,7 +37,6 @@ __all__ = [
     "Transport",
     # Processors
     "add_call_info",
-    "add_exception_and_stack_info",
     "add_thread_info",
     "add_timestamp",
     "bind",
