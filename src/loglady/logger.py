@@ -6,9 +6,15 @@ import contextlib
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from types import MappingProxyType
-from typing import Any, Self, override
+from typing import Any, Self, overload, override
 
-from .types import Context, Relay
+from .exception_capture import (
+    CapturedException,
+    capture_current_exception,
+    capture_exception,
+)
+from .stack_capture import CapturedStack
+from .types import Context, Relay, ReservedKeys
 
 
 @dataclass(slots=True, kw_only=True)
@@ -60,13 +66,25 @@ class Logger:
 
         self._relay(rec)
 
-    def trace(self, msg, **record: Any) -> None:
-        """Log a debug message and include a stack trace.
+    def trace(
+        self,
+        msg,
+        /,
+        *,
+        level="debug",
+        show_lines: bool = True,
+        show_locals: bool = False,
+        **record: Any,
+    ) -> None:
+        """Log a message and include a stack trace."""
+        stack = CapturedStack.create_from_caller(
+            capture_lines=show_lines,
+            capture_locals=show_locals,
+        )
+        if stack is not None:
+            record[ReservedKeys.captured_stack] = stack
 
-        Note that `processors.add_exception_and_stack_info` or a similar
-        processor must be used otherwise it won't actually add the stack info.
-        """
-        self.log(msg, level="debug", stack_info=True, **record)
+        self.log(msg, level=level, **record)
 
     def debug(self, msg, **record: Any) -> None:
         """Log a debug message"""
@@ -90,22 +108,87 @@ class Logger:
         """Log an error message"""
         self.log(msg, level="error", **record)
 
-    def exception(self, msg, **record: Any) -> None:
-        """Log an error message and include the current exception's traceback
+    @overload
+    def exception(
+        self,
+        err: BaseException | CapturedException | None,
+        /,
+        *,
+        show_lines: bool = True,
+        show_locals: bool = False,
+        **record: Any,
+    ) -> None: ...
 
-        Note that `processors.add_exception_and_stack_info` or a similar
-        processor must be used otherwise it won't actually add the exception
-        and traceback.
-        """
-        self.log(msg, level="error", exc_info=True, **record)
+    @overload
+    def exception(
+        self,
+        msg: str,
+        err: BaseException | CapturedException | None = None,
+        /,
+        *,
+        show_lines: bool = True,
+        show_locals: bool = False,
+        **record: Any,
+    ) -> None: ...
+
+    @overload
+    def exception(
+        self,
+        msg_or_err: str | BaseException | CapturedException | None = None,
+        err_or_unspecified: BaseException | CapturedException | None = None,
+        /,
+        *,
+        show_lines: bool = True,
+        show_locals: bool = False,
+        **record: Any,
+    ) -> None: ...
+
+    def exception(
+        self,
+        msg_or_err: str | BaseException | CapturedException | None = None,
+        err_or_unspecified: BaseException | CapturedException | None = None,
+        /,
+        *,
+        show_lines: bool = True,
+        show_locals: bool = False,
+        **record: Any,
+    ) -> None:
+        """Log an error message and include exception information."""
+
+        match msg_or_err:
+            case None:
+                msg = ""
+            case str():
+                msg = msg_or_err
+            case BaseException() | CapturedException():
+                msg = ""
+                err_or_unspecified = msg_or_err
+
+        match err_or_unspecified:
+            case None:
+                err = capture_current_exception(
+                    capture_lines=show_lines,
+                    capture_locals=show_locals,
+                )
+            case _:
+                err = capture_exception(
+                    err_or_unspecified,
+                    capture_lines=show_lines,
+                    capture_locals=show_locals,
+                )
+
+        if err is not None:
+            record[ReservedKeys.captured_exception] = err
+
+        self.log(msg, level="error", **record)
 
     def catch(self, exc_types=BaseException, *, msg: str = "unexpected error", reraise: bool = False):
         @contextlib.contextmanager
         def catcher():
             try:
                 yield
-            except exc_types:
-                self.exception(msg)
+            except exc_types as err:
+                self.exception(msg, err)
                 if reraise:
                     raise
 
