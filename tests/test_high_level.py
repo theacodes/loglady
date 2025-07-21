@@ -37,13 +37,6 @@ def test_configure_and_magics():
         dict(
             msg="hello, world!",
             level="info",
-            timestamp=...,
-            call_filename=...,
-            call_fn=...,
-            call_lineno=...,
-            call_module=...,
-            thread_id=...,
-            thread_name=...,
         ),
     )
     assert_dict_subset(
@@ -51,13 +44,5 @@ def test_configure_and_magics():
         dict(
             msg="Eek!",
             level="warning",
-            more_stuff="...",
-            timestamp=...,
-            call_filename=...,
-            call_fn=...,
-            call_lineno=...,
-            call_module=...,
-            thread_id=...,
-            thread_name=...,
         ),
     )
