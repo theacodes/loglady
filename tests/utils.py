@@ -3,6 +3,16 @@
 # Full text available at: https://opensource.org/licenses/MIT
 
 
+import dataclasses
+from dataclasses import Field
+from typing import Any, ClassVar, Protocol, runtime_checkable
+
+
+@runtime_checkable
+class DataclassInstance(Protocol):
+    __dataclass_fields__: ClassVar[dict[str, Field[Any]]]
+
+
 def assert_dict_subset(actual, expected):
     """Compares two dictionaries but only checks the keys found in *expected*.
 
@@ -11,16 +21,15 @@ def assert_dict_subset(actual, expected):
     """
     __tracebackhide__ = True
 
+    if isinstance(actual, DataclassInstance):
+        actual = dataclasses.asdict(actual)
+
     for k, rv in expected.items():
-        try:
-            lv = actual[k]
-        except KeyError as err:
-            msg = f'"{k}" not found in actual, expected actual["{k}"]=={rv!r}'
-            raise AssertionError() from err
+        assert k in actual, f"{k!r} not found in actual, expected actual[{k!r}] == {rv!r}. actual:\n{actual!r}"
+
+        lv = actual[k]
 
         if rv == ...:
             continue
 
-        if lv != rv:
-            msg = f'expected actual["{k}"]=={rv!r}, found {lv!r}'
-            raise AssertionError(msg)
+        assert lv == rv, f"expected actual[{k!r}] == {rv!r}, found {lv!r}"
