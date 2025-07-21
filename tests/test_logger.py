@@ -3,7 +3,9 @@
 # Full text available at: https://opensource.org/licenses/MIT
 
 from loglady import Record
+from loglady.exception_capture import CapturedException, CapturedFrame
 from loglady.logger import Logger
+from loglady.types import ReservedKeys
 
 
 class RelayStub:
@@ -51,8 +53,6 @@ def test_methods():
     assert relay.records.pop() == dict(msg="hello", a=42)
     log.debug("hello", a=43)
     assert relay.records.pop() == dict(msg="hello", level="debug", a=43)
-    log.trace("hello", a=44)
-    assert relay.records.pop() == dict(msg="hello", level="debug", stack_info=True, a=44)
     log.info("hello", a=45)
     assert relay.records.pop() == dict(msg="hello", level="info", a=45)
     log.warning("hello", a=46)
@@ -63,8 +63,68 @@ def test_methods():
     assert relay.records.pop() == dict(msg="hello", level="success", a=48)
     log.error("hello", a=49)
     assert relay.records.pop() == dict(msg="hello", level="error", a=49)
-    log.exception("hello", a=50)
-    assert relay.records.pop() == dict(msg="hello", level="error", exc_info=True, a=50)
+
+
+def test_exception():
+    relay = RelayStub()
+    log = Logger(_relay=relay)
+
+    # No exception current set, should just return the record as-is
+    log.exception("hmm")
+    assert relay.records.pop() == dict(msg="hmm", level="error")
+
+    # Explicitly passing an exception instance
+    err = ValueError("hrm")
+    log.exception(err)
+    record = relay.records.pop()
+    assert record["msg"] == ""
+    captured: CapturedException = record[ReservedKeys.captured_exception]
+    assert captured.str == "hrm"
+    assert captured.type == "ValueError"
+
+    # Passing in both a message and an error instance
+    log.exception("oh, no!", err)  # noqa: PLE1205
+    record = relay.records.pop()
+    assert record["msg"] == "oh, no!"
+    captured: CapturedException = record[ReservedKeys.captured_exception]
+    assert captured.str == "hrm"
+    assert captured.type == "ValueError"
+
+    # Getting the exception from context.
+    try:
+        raise ValueError("oops")  # noqa: EM101, TRY301
+    except ValueError:
+        log.exception()
+
+    record = relay.records.pop()
+    assert record["msg"] == ""
+    captured: CapturedException = record[ReservedKeys.captured_exception]
+    assert captured.str == "oops"
+    assert captured.type == "ValueError"
+
+    # Getting the exception from context with a message
+    try:
+        raise ValueError("oops")  # noqa: EM101, TRY301
+    except ValueError:
+        log.exception("oh, no!")
+
+    record = relay.records.pop()
+    assert record["msg"] == "oh, no!"
+    captured: CapturedException = record[ReservedKeys.captured_exception]
+    assert captured.str == "oops"
+    assert captured.type == "ValueError"
+
+
+def test_trace():
+    relay = RelayStub()
+    log = Logger(_relay=relay)
+
+    log.trace("hmm")
+    record = relay.records.pop()
+    assert record["msg"] == "hmm"
+    stack = record[ReservedKeys.captured_stack]
+    first = stack[0]
+    assert isinstance(first, CapturedFrame)
 
 
 def test_methods_with_context():
