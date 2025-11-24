@@ -14,7 +14,7 @@ import pytest
 import rich
 
 from . import config, manager_stack
-from .destination import CaptureDestination
+from .destination import CaptureDestination, Destination
 from .rich.destination import RichConsoleDestination
 from .transport import SyncTransport
 from .types import Record
@@ -27,6 +27,12 @@ def pytest_configure(config: pytest.Config) -> None:
 
 def pytest_addoption(parser):
     group = parser.getgroup("loglady", "loglady capturing options.")
+    group.addoption(
+        "--loglady-stdout",
+        action="store_true",
+        default=False,
+        help="Writes all logs to stdout in addition to capturing them. To actually see them, use -s or capsys.",
+    )
     group.addoption(
         "--loglady-disable-deferred-formatting",
         action="store_true",
@@ -64,6 +70,10 @@ class LogladyPlugin:
         return self.config.option.color != "no"
 
     @property
+    def log_to_stdout(self) -> bool:
+        return self.config.option.loglady_stdout
+
+    @property
     def disable_deferred_formatting(self) -> bool:
         return self.config.option.loglady_disable_deferred_formatting
 
@@ -74,8 +84,14 @@ class LogladyPlugin:
 
     def start_global_capturing(self):
         self._global_captured = CaptureDestination(limit=self.capture_limit)
+
+        destinations: list[Destination] = [self._global_captured]
+
+        if self.log_to_stdout:
+            destinations.append(RichConsoleDestination())
+
         self._manager = config.configure(
-            transport=SyncTransport(self._global_captured),
+            transport=SyncTransport(destinations=destinations),
             processors=config.DEFAULT_PROCESSORS,
             install_hook=False,
             once=False,

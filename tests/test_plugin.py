@@ -61,3 +61,14 @@ def test_capture_renders_on_teardown_failure(pytester):
     result.stdout.fnmatch_lines(["*Captured [*]loglady[*] setup*", "*fixture before*"])
     result.stdout.fnmatch_lines(["*Captured [*]loglady[*] call*", "*within test*"])
     result.stdout.fnmatch_lines(["*Captured [*]loglady[*] teardown*", "*fixture after before raise*"])
+
+
+def test_show_logs(pytester):
+    pytester.copy_example("tests/scripts/deferred_capture.py")
+
+    result = pytester.runpytest("deferred_capture.py::test_passing", "--loglady-stdout", "-s")
+
+    result.stdout.fnmatch_lines("plugins:*loglady-*.*.*")  # Loglady version should be in the output
+    result.stdout.fnmatch_lines("*1 passed*")  # should run one test and pass
+    result.stdout.no_fnmatch_line("*Captured [*]loglady[*]*")  # should not print captured logs here
+    result.stdout.fnmatch_lines("*within test*")  # should have printed the logs as they came in
