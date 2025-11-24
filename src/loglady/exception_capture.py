@@ -21,7 +21,9 @@ from .stack_capture import CapturedFrame, CapturedStack
 class CapturedException:
     type: str
     module: str | None = None
-    str: str
+    # NOTE: This can **not** be named str as it would cause Pydantic issues, see:
+    # https://github.com/pydantic/pydantic/issues/12570
+    string: str
     repr: str
     notes: Sequence[str] | None = None
     stack: Sequence[CapturedFrame] | None = None
@@ -150,7 +152,7 @@ def capture_exception(
         return CapturedException(
             type=exc_type_name,
             module=exc_type_module,
-            str=exc_str,
+            string=exc_str,
             repr=exc_repr,
             notes=notes,
             suppress_context=suppress_context,
@@ -205,7 +207,7 @@ def capture_exception(
     return CapturedException(
         type=exc_type_name,
         module=exc_type_module,
-        str=exc_str,
+        string=exc_str,
         repr=exc_repr,
         notes=notes,
         stack=stack,

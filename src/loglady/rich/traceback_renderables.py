@@ -63,7 +63,7 @@ class CapturedExceptionRenderable:
                 *[
                     (f"{self.exception.type}:", "traceback.exc_type"),
                     (" ", ""),
-                    (self.exception.str, "traceback.exc_value"),
+                    (self.exception.string, "traceback.exc_value"),
                 ]
             ),
             (1, 0),

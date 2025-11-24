@@ -79,7 +79,7 @@ def test_exception():
     record = relay.records.pop()
     assert record["msg"] == ""
     captured: CapturedException = record[ReservedKeys.captured_exception]
-    assert captured.str == "hrm"
+    assert captured.string == "hrm"
     assert captured.type == "ValueError"
 
     # Passing in both a message and an error instance
@@ -87,7 +87,7 @@ def test_exception():
     record = relay.records.pop()
     assert record["msg"] == "oh, no!"
     captured: CapturedException = record[ReservedKeys.captured_exception]
-    assert captured.str == "hrm"
+    assert captured.string == "hrm"
     assert captured.type == "ValueError"
 
     # Getting the exception from context.
@@ -99,7 +99,7 @@ def test_exception():
     record = relay.records.pop()
     assert record["msg"] == ""
     captured: CapturedException = record[ReservedKeys.captured_exception]
-    assert captured.str == "oops"
+    assert captured.string == "oops"
     assert captured.type == "ValueError"
 
     # Getting the exception from context with a message
@@ -111,7 +111,7 @@ def test_exception():
     record = relay.records.pop()
     assert record["msg"] == "oh, no!"
     captured: CapturedException = record[ReservedKeys.captured_exception]
-    assert captured.str == "oops"
+    assert captured.string == "oops"
     assert captured.type == "ValueError"
 
 

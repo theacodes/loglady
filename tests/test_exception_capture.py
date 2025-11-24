@@ -13,7 +13,7 @@ def test_capture_exception_without_traceback():
     result = capture_exception(ValueError())
     assert result.type == "ValueError"
     assert result.module == "builtins"
-    assert result.str == ""
+    assert result.string == ""
     assert result.notes is None
     assert result.stack is None
     assert result.cause is None
@@ -23,17 +23,17 @@ def test_capture_exception_without_traceback():
     result = capture_exception(ValueError("test error"))
     assert result.type == "ValueError"
     assert result.module == "builtins"
-    assert result.str == "test error"
+    assert result.string == "test error"
 
     result = capture_exception(ValueError("test error", 1, 2, 3))
     assert result.type == "ValueError"
     assert result.module == "builtins"
-    assert result.str == "('test error', 1, 2, 3)"
+    assert result.string == "('test error', 1, 2, 3)"
 
     result = capture_exception(CustomError("custom error"))
     assert result.type == "CustomError"
     assert result.module == __name__
-    assert result.str == "custom error"
+    assert result.string == "custom error"
 
 
 def test_capture_exception_with_traceback():
@@ -82,7 +82,7 @@ def test_capture_exception_with_context():
     assert result.context is not None
     assert result.context.type == "ZeroDivisionError"
     assert result.context.module == "builtins"
-    assert result.context.str == "division by zero"
+    assert result.context.string == "division by zero"
 
     assert result.cause is None
 
@@ -106,7 +106,7 @@ def test_capture_exception_with_cause():
     assert result.cause is not None
     assert result.cause.type == "ZeroDivisionError"
     assert result.cause.module == "builtins"
-    assert result.cause.str == "division by zero"
+    assert result.cause.string == "division by zero"
 
     assert result.context is None
 
@@ -118,11 +118,11 @@ def test_capture_exception_group():
 
     assert result.type == "ExceptionGroup"
     assert result.module == "builtins"
-    assert result.str == "Multiple errors (2 sub-exceptions)"
+    assert result.string == "Multiple errors (2 sub-exceptions)"
 
     assert result.exceptions is not None
     assert len(result.exceptions) == 2
     assert result.exceptions[0].type == "ValueError"
-    assert result.exceptions[0].str == "oops"
+    assert result.exceptions[0].string == "oops"
     assert result.exceptions[1].type == "KeyError"
-    assert result.exceptions[1].str == "'my bad'"
+    assert result.exceptions[1].string == "'my bad'"
