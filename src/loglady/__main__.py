@@ -15,7 +15,7 @@ from decimal import Decimal
 
 import loglady
 
-_counter = 0
+_counter: float = 0
 
 
 def add_mock_timestamp(record: loglady.Record) -> loglady.Record:
