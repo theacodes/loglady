@@ -4,7 +4,7 @@
 
 
 import loglady.processors
-from loglady.exception_capture import CapturedFrame
+from loglady.stack_capture import CapturedFrame
 from loglady.types import ReservedKeys
 
 

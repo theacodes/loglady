@@ -20,7 +20,7 @@ from rich.containers import Renderables
 from rich.table import Table
 from rich.text import Text
 
-from loglady.exception_capture import CapturedFrame
+from loglady.stack_capture import CapturedFrame
 from loglady.types import Record, ReservedKeys
 
 from .traceback_renderables import CapturedExceptionRenderable, CapturedStackRenderable

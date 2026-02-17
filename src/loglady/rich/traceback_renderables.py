@@ -19,7 +19,8 @@ from rich.table import Table
 from rich.text import Text
 from rich.theme import Theme
 
-from loglady.exception_capture import CapturedException, CapturedFrame
+from loglady.exception_capture import CapturedException
+from loglady.stack_capture import CapturedFrame
 
 
 @dataclass(frozen=True, kw_only=True, slots=True)

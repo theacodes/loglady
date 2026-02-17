@@ -3,8 +3,9 @@
 # Full text available at: https://opensource.org/licenses/MIT
 
 from loglady import Record
-from loglady.exception_capture import CapturedException, CapturedFrame
+from loglady.exception_capture import CapturedException
 from loglady.logger import Logger
+from loglady.stack_capture import CapturedFrame
 from loglady.types import ReservedKeys
 
 

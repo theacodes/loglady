@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from types import EllipsisType
 from typing import Any, overload
 
-from .stack_capture import CapturedFrame, CapturedStack
+from .stack_capture import CapturedStack
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -26,7 +26,7 @@ class CapturedException:
     string: str
     repr: str
     notes: Sequence[str] | None = None
-    stack: Sequence[CapturedFrame] | None = None
+    stack: CapturedStack | None = None
     cause: CapturedException | None = None
     context: CapturedException | None = None
     exceptions: Sequence[CapturedException] | None = None
