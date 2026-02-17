@@ -86,7 +86,7 @@ class FormattedRecord(ConsoleRenderable):
         table.add_column(style="log.level", width=1, overflow="crop")
         table.add_column(ratio=1, overflow="fold")
         table.add_column(style="log.callsite", justify="right")
-        table.add_column(style="log.thread", width=1, overflow="ignore", justify="right")
+        table.add_column(style="log.thread", width=2, overflow="ignore", justify="right")
         return table
 
 
