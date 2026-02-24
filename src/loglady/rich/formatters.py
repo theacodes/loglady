@@ -8,6 +8,7 @@ Formatters for RichConsoleDestination
 
 from __future__ import annotations
 
+import reprlib
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from types import MappingProxyType
@@ -255,6 +256,14 @@ class NonrepeatedFormatter(TextPartFormatter):
 @dataclass(slots=True)
 class RecordItemsFormatter(TextPartFormatter):
     _hl: rich.highlighter.ReprHighlighter = field(init=False, default_factory=rich.highlighter.ReprHighlighter)
+    _repr: reprlib.Repr = field(
+        init=False,
+        default_factory=lambda: reprlib.Repr(
+            maxstring=100,
+            maxother=100,
+            fillvalue=" [...] ",
+        ),
+    )
 
     @override
     def __call__(self, record: Record, original: Record):
@@ -262,6 +271,7 @@ class RecordItemsFormatter(TextPartFormatter):
 
     def _gen_items(self, record: Record):
         for k, v in record.items():
+            yield "\n"
             yield Text(f"{k}=", "log.items.keys")
             match v:
                 case bool():
@@ -269,8 +279,7 @@ class RecordItemsFormatter(TextPartFormatter):
                 case None:
                     yield Text("none", "repr.none")
                 case _:
-                    yield self._hl(repr(v))
-            yield " "
+                    yield self._hl(self._repr.repr(v))
 
 
 @dataclass(slots=True)

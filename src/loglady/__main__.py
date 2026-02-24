@@ -167,6 +167,14 @@ def demo_group(log: loglady.Logger):
         log.exception("this one will have an exception group.")
 
 
+LONG = """You are a worm through time. The thunder song distorts you. Happiness \
+comes. White pearls, but yellow and red in the eye. Through a mirror, inverted is made \
+right. Leave your insides by the door. Push the fingers through the surface into the \
+wet. You've always been the new you. You want this to be true. We stand around you while \
+you dream. You can almost hear our words but you forget. This happens more and more now. \
+You gave us the permission in your regulations. We wait in the stains. The word that \
+describes this is redacted. Repeat the word."""
+
 if __name__ == "__main__":
     mgr = loglady.configure(
         processors=[*loglady.DEFAULT_PROCESSORS, add_mock_timestamp],
@@ -188,17 +196,19 @@ if __name__ == "__main__":
     )
 
     log.info(
-        """\
+        f"""\
 this one has a really really really really really long message that will get split over \
-multiple lines. You are a worm through time. The thunder song distorts you. Happiness \
-comes. White pearls, but yellow and red in the eye. Through a mirror, inverted is made \
-right. Leave your insides by the door. Push the fingers through the surface into the \
-wet. You've always been the new you. You want this to be true. We stand around you while \
-you dream. You can almost hear our words but you forget. This happens more and more now. \
-You gave us the permission in your regulations. We wait in the stains. The word that \
-describes this is redacted. Repeat the word.""",
+multiple lines. {LONG}.""",
         it="also has",
         some=dict(data=42),
+    )
+
+    log.info(
+        "And this one has a normal length message but structured data that's really long",
+        long_str=LONG,
+        long_dict={"key": LONG, "key2": LONG},
+        long_list=[1, 2, LONG, LONG, LONG],
+        long_nested=[1, 2, [3, 4, LONG, [5, 6, [7, 8, LONG, LONG], 9], 10], 11],
     )
 
     demo_magics()
