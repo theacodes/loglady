@@ -14,6 +14,8 @@ from rich.constrain import Constrain
 from rich.highlighter import ReprHighlighter
 from rich.padding import Padding
 from rich.panel import Panel
+from rich.segment import Segment
+from rich.style import Style
 from rich.syntax import Syntax
 from rich.table import Table
 from rich.text import Text
@@ -31,48 +33,71 @@ class CapturedExceptionRenderable:
 
     def __rich_console__(self, console: Console, options: ConsoleOptions) -> RenderResult:
         with console.use_theme(_traceback_theme):
-            yield Padding(self._render(), (0, 0, 0, self.indent * 2))
+            nl = Segment.line()
+            indent_seg = Segment(
+                ("│" + " " * self.indent * 2),
+                style=console.get_style("traceback.indent"),
+            )
+
+            for line in console.render_lines(self._render(), pad=True):
+                if self.indent:
+                    yield indent_seg
+                yield from line
+                yield nl
 
     @group()
     def _render(self):
         if self.depth == 0:
             yield Text("An exception occurred:", "traceback.title")
+            yield Segment.line()
 
-        if self.depth == 0:
             if self.exception.cause:
                 yield CapturedExceptionRenderable(
-                    exception=self.exception.cause, depth=self.depth + 1, indent=self.indent
+                    exception=self.exception.cause,
+                    depth=self.depth + 1,
+                    indent=self.indent,
                 )
+                yield Segment.line()
                 yield Text("The previous exception was the direct cause of:", "traceback.cause")
+                yield Segment.line()
 
             if self.exception.context:
                 yield CapturedExceptionRenderable(
-                    exception=self.exception.context, depth=self.depth + 1, indent=self.indent
+                    exception=self.exception.context,
+                    depth=self.depth + 1,
+                    indent=self.indent,
                 )
-                yield Text("While handling the above exception, another exception occurred:", "traceback.cause")
+                yield Segment.line()
+                yield Text("While handling the above exception, another exception occurred:", "traceback.context")
+                yield Segment.line()
 
         yield from self._traceback()
+        yield Segment.line()
         yield from self._title()
+        yield from self._notes()
 
         if self.exception.exceptions:
+            yield Segment.line()
             for subexception in self.exception.exceptions:
                 yield CapturedExceptionRenderable(exception=subexception, depth=self.depth + 1, indent=self.indent + 1)
+                yield Segment.line()
 
     def _title(self):
-        yield Padding(
-            Text.assemble(
-                *[
-                    (f"{self.exception.type}:", "traceback.exc_type"),
-                    (" ", ""),
-                    (self.exception.string, "traceback.exc_value"),
-                ]
-            ),
-            (1, 0),
+        yield Text.assemble(
+            *[
+                (f"{self.exception.type}:", "traceback.exc_type"),
+                (" ", ""),
+                (self.exception.string, "traceback.exc_value"),
+            ]
         )
 
     def _traceback(self):
         if self.exception.stack:
-            yield Padding(CapturedStackRenderable(stack=self.exception.stack, title="Traceback"), (1, 0, 0, 0))
+            yield Padding(CapturedStackRenderable(stack=self.exception.stack, title="Traceback"), (0, 0))
+
+    def _notes(self):
+        for note in self.exception.notes or ():
+            yield Text.from_markup(f"- {note}", style="traceback.note")
 
 
 @dataclass(frozen=True, kw_only=True, slots=True)
@@ -94,7 +119,13 @@ class CapturedStackRenderable:
 
             frames = Group(
                 *(
-                    Padding(CapturedFrameRenderable(frame=frame, syntax_theme=self.syntax_theme), (1, 0, 0, 0))
+                    Padding(
+                        CapturedFrameRenderable(
+                            frame=frame,
+                            syntax_theme=self.syntax_theme,
+                        ),
+                        (1, 0, 0, 0),
+                    )
                     for frame in frames
                     if not frame.is_hidden
                 )
@@ -213,10 +244,13 @@ _repr_highlighter: Final[ReprHighlighter] = ReprHighlighter()
 
 _traceback_theme: Final[Theme] = Theme(
     {
-        "traceback.exc_type": "underline bold bright_red",
-        "traceback.exc_value": "italic",
+        "traceback.exc_type": "underline bold red",
+        "traceback.exc_value": "bold bright_white",
         "traceback.title": "bold bright_red",
-        "traceback.cause": "italic",
+        "traceback.cause": "bold yellow",
+        "traceback.context": "bold yellow",
+        "traceback.note": "italic white",
+        "traceback.indent": "gray19",
         "stacktrace.title": "bold white",
         "stacktrace.aside": "dim italic",
         "stacktrace.text": "white",
@@ -224,17 +258,6 @@ _traceback_theme: Final[Theme] = Theme(
         "stacktrace.lineno": "bright_cyan",
         "stacktrace.function": "bright_green",
         "stacktrace.decoration": "dim",
-    },
-    inherit=True,
-)
-_stacktrace_theme: Final[Theme] = Theme(
-    {
-        "traceback.exc_type": "underline bold bright_red",
-        "traceback.exc_value": "italic",
-        "traceback.title": "bold bright_red",
-        "traceback.cause": "italic",
-        "stacktrace.title": "magenta",
-        "stacktrace.text": "white",
     },
     inherit=True,
 )
