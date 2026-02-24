@@ -9,8 +9,8 @@ should be configured at application startup.
 """
 
 from . import manager_stack, processors
-from ._excepthook import install_excepthook, is_repl
 from .destination import DestinationList
+from .excepthook import install_excepthook, is_repl
 from .manager import Manager
 from .rich import RichConsoleDestination
 from .transport import SyncTransport, ThreadedTransport, Transport
