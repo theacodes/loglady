@@ -85,8 +85,6 @@ class CapturedStackRenderable:
     def __rich_console__(self, console: Console, options: ConsoleOptions) -> RenderResult:
         frames = reversed(list(self.stack))
 
-        # TODO : Handle hidden frames
-
         with console.use_theme(_traceback_theme):
             yield Text.assemble(
                 (self.title, "stacktrace.title"),

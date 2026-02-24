@@ -26,7 +26,14 @@ class CapturedException:
     string: str
     repr: str
     notes: Sequence[str] | None = None
+
     stack: CapturedStack | None = None
+    """The captured stack trace for this exception, if available.
+
+    NOTE: This is sorted with the most recent call first, which is the opposite of typical `traceback` usage, but
+    matches the order of `stack_capture`.
+    """
+
     cause: CapturedException | None = None
     context: CapturedException | None = None
     exceptions: Sequence[CapturedException] | None = None
@@ -164,6 +171,7 @@ def capture_exception(
             limit=stack_limit,
             capture_lines=capture_lines,
             capture_locals=capture_locals,
+            reverse=True,
         )
     else:
         stack = None

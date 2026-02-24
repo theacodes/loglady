@@ -39,19 +39,23 @@ def test_capture_exception_without_traceback():
 def test_capture_exception_with_traceback():
     # Use a thrown exception to generate a traceback.
     def make_exception(*args) -> ValueError:
-        try:
-            raise ValueError(*args)  # noqa: TRY301
-        except ValueError as e:
-            return e
+        def make_exception_inner():
+            try:
+                raise ValueError(*args)  # noqa: TRY301
+            except ValueError as e:
+                return e
+
+        return make_exception_inner()
 
     exc = make_exception("test error", 1, 2, 3)
     result = capture_exception(exc)
 
     assert result.stack is not None
-    frame = result.stack[-1]
 
+    # Most recent call should be *first*, like a normal stacktrace.
+    frame = result.stack[0]
     assert frame.filename == __file__
-    assert frame.name == "make_exception"
+    assert frame.name == "make_exception_inner"
 
 
 def test_capture_exception_with_notes():

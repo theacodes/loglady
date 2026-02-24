@@ -89,6 +89,7 @@ class CapturedStack(Sequence[CapturedFrame]):
         capture_lines: bool = True,
         capture_locals: bool = False,
         keep_hidden: bool = False,
+        reverse: bool = False,
     ) -> CapturedStack:
         return capture_stack(
             start,
@@ -96,6 +97,7 @@ class CapturedStack(Sequence[CapturedFrame]):
             capture_lines=capture_lines,
             capture_locals=capture_locals,
             keep_hidden=keep_hidden,
+            reverse=reverse,
         )
 
     @classmethod
@@ -173,6 +175,7 @@ def capture_stack(
     capture_lines: bool = True,
     capture_locals: bool = False,
     keep_hidden: bool = False,
+    reverse: bool = False,
 ) -> CapturedStack:
     def predicate(frame: FrameType) -> bool:
         return not is_frame_hidden(frame)
@@ -194,6 +197,9 @@ def capture_stack(
                 frames.append(CapturedFrame.create(frame_.frame, capture_line=False, capture_locals=False))
             case _:
                 pass
+
+    if reverse:
+        frames.reverse()
 
     return CapturedStack(frames=tuple(frames))
 
