@@ -7,7 +7,22 @@ from .destination import CaptureDestination, Destination, TextIODestination
 from .errors import LogladyError
 from .exception_capture import CapturedException
 from .logger import Logger
-from .magics import bind, catch, debug, error, exception, flush, info, log, logger, success, trace, warn, warning
+from .magics import (
+    bind,
+    catch,
+    debug,
+    error,
+    exception,
+    flush,
+    info,
+    log,
+    logger,
+    prefix,
+    success,
+    trace,
+    warn,
+    warning,
+)
 from .manager import Manager
 from .processors import add_call_info, add_thread_info, add_timestamp, fancy_prefix_icon
 from .rich import RichConsoleDestination
@@ -51,6 +66,7 @@ __all__ = [
     "log",
     # Magics
     "logger",
+    "prefix",
     "success",
     "trace",
     "warn",
