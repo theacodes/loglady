@@ -174,16 +174,23 @@ class LevelFormatter(TextPartFormatter):
 class MessageFormatter(TextPartFormatter):
     @override
     def __call__(self, record: Record, original: Record):
+        return Text.assemble(*self._gen_items(record, original))
+
+    def _gen_items(self, record: Record, original: Record):
         level = original.get(ReservedKeys.level, "notset")
+        style = f"log.level.{level}"
+
+        if (prefix := record.pop(ReservedKeys.prefix, None)) is not None:
+            yield Text(f"{prefix} ", style=style)
+
+            icon = record.pop(ReservedKeys.icon, "●")
+            if icon:
+                yield Text(f"{icon} ", style=style)
+
         msg = record.pop(ReservedKeys.msg)
-        prefix = record.pop(ReservedKeys.prefix, None)
-        icon = record.pop(ReservedKeys.icon, "●" if prefix else "")
-        if icon:
-            icon = f" {icon} "
+        formatted = Text.from_markup(text=f"{msg} ", style=style)
 
-        formatted = Text.from_markup(text=f"{prefix if prefix else ''}{icon}{msg} ", style=f"log.level.{level}")
-
-        return formatted
+        yield formatted
 
 
 @dataclass(slots=True)

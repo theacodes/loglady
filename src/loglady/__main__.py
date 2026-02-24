@@ -54,6 +54,7 @@ def demo_prefixes(log: loglady.Logger):
     l2.warning("icons that can be!", icon=":(")
     l2.success("used with prefix!", icon="f")
     l2.error("including arrows, marks, and other fun bits!", icon="snow")
+    l2.info("& you can use rich markup, like emoji :ok: and [green]color[/]!")
 
 
 def demo_magics():
@@ -211,11 +212,12 @@ multiple lines. {LONG}.""",
         long_nested=[1, 2, [3, 4, LONG, [5, 6, [7, 8, LONG, LONG], 9], 10], 11],
     )
 
-    demo_magics()
-    DemoCallsite()()
-    demo_prefixes(log)
     demo_exc_and_stack(log)
     demo_catcher(log)
     demo_context(log)
     demo_cause(log)
     demo_group(log)
+
+    demo_magics()
+    DemoCallsite()()
+    demo_prefixes(log)
