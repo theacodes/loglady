@@ -441,8 +441,7 @@ def is_frame_from_loglady(frame: FrameType):
     return filename.startswith(_LOGLADY_PATH)
 
 
-_LOGLADY_PATH: Final[str] = str(pathlib.Path(__file__).parent)
-
+_LOGLADY_PATH: Final[str] = str(pathlib.Path(__file__).parent) + os.sep
 
 #
 # Internal helpers
