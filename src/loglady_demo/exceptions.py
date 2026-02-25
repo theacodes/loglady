@@ -37,7 +37,7 @@ def demo_exc_and_stack():
 
 
 def demo_catcher():
-    with loglady.catch(msg="this catches exceptions with a context manager"):
+    with loglady.catch(message="this catches exceptions with a context manager"):
         lol_this_wont_work()  # pyright: ignore[reportUndefinedVariable]  # noqa: F821
 
 
@@ -113,3 +113,4 @@ if __name__ == "__main__":
     demo_context()
     demo_cause()
     demo_group()
+    loglady.info("done!")

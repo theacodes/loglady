@@ -110,8 +110,8 @@ def prefix(prefix: str, **context: Any) -> Logger:
     return logger().prefix(prefix, **context)
 
 
-def catch(exc_types=BaseException, *, msg: str = "unexpected error", reraise: bool = False):
-    return logger().catch(exc_types=exc_types, msg=msg, reraise=reraise)
+def catch(exc_types=BaseException, *, message: str = "unexpected error", reraise: bool = False):
+    return logger().catch(exc_types=exc_types, message=message, reraise=reraise)
 
 
 def flush():
