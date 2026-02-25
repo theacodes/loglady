@@ -17,7 +17,7 @@ from .magics import (
     info,
     log,
     logger,
-    prefix,
+    named,
     success,
     trace,
     warn,
@@ -34,7 +34,6 @@ from .types import Processor
 
 __all__ = [
     "DEFAULT_PROCESSORS",
-    # Types & classes
     "CaptureDestination",
     "CapturedException",
     "CapturedFrame",
@@ -52,7 +51,6 @@ __all__ = [
     "TextIODestination",
     "ThreadedTransport",
     "Transport",
-    # Processors
     "add_call_info",
     "add_thread_info",
     "add_timestamp",
@@ -66,9 +64,8 @@ __all__ = [
     "flush",
     "info",
     "log",
-    # Magics
     "logger",
-    "prefix",
+    "named",
     "success",
     "trace",
     "warn",

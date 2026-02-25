@@ -26,21 +26,45 @@ class Logger:
     instance.
     """
 
-    # TODO: Rename me
-    _name: str = ""
-
+    _name: Final[str] = ""
     _relay: Final[Relay]
     _context: Final[Context] = field(default_factory=dict)
 
+    #
+    # Naming
+    #
+
+    @property
+    def name(self) -> str:
+        """The name of the logger.
+
+        This is immutable. Use `named()` to create a new logger with a different name.
+        """
+        return self._name
+
+    def named(self, name: str) -> Self:
+        """Create a new logger with the given name. The new logger inherits this logger's context."""
+        return self.__class__(_relay=self._relay, _context=self._context, _name=name)
+
+    def prefixed(self, prefix: str, *, sep=".") -> Self:
+        """Create a new logger with the given prefix added to the name. The new logger inherits this logger's context."""
+        return self.named(f"{prefix}{sep}{self._name}" if self._name else prefix)
+
+    def suffixed(self, suffix: str, *, sep=".") -> Self:
+        """Create a new logger with the given suffix added to the name. The new logger inherits this logger's context."""
+        return self.named(f"{self._name}{sep}{suffix}" if self._name else suffix)
+
+    #
+    # Context
+    #
+
     @property
     def context(self) -> Mapping[str, Any]:
-        """A read-only view of the current context. Use bind() or unbind() to
-        change the context."""
+        """A read-only view of the current context. Use bind() or unbind() to change the context."""
         return MappingProxyType(self._context)
 
     def bind(self, **context: Any) -> Self:
-        """Create a new logger with the given context. The new logger inherits
-        this logger's context."""
+        """Create a new logger with the given context. The new logger inherits this logger's context."""
         if context is self.context or self.context == context == {}:
             return self
 
@@ -55,16 +79,13 @@ class Logger:
             inst._context.pop(key, None)
         return inst
 
-    # TODO: rename me
-    def prefix(self, prefix: str, **context) -> Self:
-        """Shortcut for creating a new logger with the given name and context"""
-        return self.with_name(prefix).bind(**context)
-
-    def with_name(self, name: str) -> Self:
-        return self.__class__(_relay=self._relay, _context=self._context, _name=name)
+    #
+    # Helpers
+    #
 
     def create_record(self, message: str, /, level: str | None = None, **context: Any) -> Record:
         """Creates a new record without relaying it.
+
         You shouldn't need to call this directly, it's used by `log()` and friends.
         """
         ctx = {**self._context, **context}
@@ -75,6 +96,17 @@ class Logger:
             level=level,
             context=ctx,
         )
+
+    def relay(self, record: Record) -> None:
+        """Relays a precreate Record.
+
+        You probably don't wanna call this directly, it's used by `log()` and friends. However, if you need to
+        manipulate a record before sending it, this could be useful."""
+        self._relay(record)
+
+    #
+    # Logging methods
+    #
 
     def log(self, message: str, /, level: str | None = None, **context: Any) -> None:
         """You probably don't wanna call this, as it's the common log method used by info(), warning(), etc. I mean,

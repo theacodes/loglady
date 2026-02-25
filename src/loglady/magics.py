@@ -24,12 +24,31 @@ from loglady.exception_capture import CapturedException
 from . import manager_stack
 from .logger import Logger
 
+#
+# Manager shortcuts
+#
 
-def logger(**context: Any) -> Logger:
-    return manager_stack.logger(**context)
+
+def flush():
+    manager_stack.flush_all()
 
 
+#
+# Logger creation
+#
+
+
+def logger(name: str = "", **context: Any) -> Logger:
+    return manager_stack.logger(name=name, **context)
+
+
+named = logger
 bind = logger
+
+
+#
+# Logging shortcuts
+#
 
 
 def log(msg, **record: Any) -> None:
@@ -106,13 +125,5 @@ def exception(
     logger().exception(msg_or_err, err_or_unspecified, show_lines=show_lines, show_locals=show_locals, **record)
 
 
-def prefix(prefix: str, **context: Any) -> Logger:
-    return logger().prefix(prefix, **context)
-
-
 def catch(exc_types=BaseException, *, message: str = "unexpected error", reraise: bool = False):
     return logger().catch(exc_types=exc_types, message=message, reraise=reraise)
-
-
-def flush():
-    manager_stack.flush_all()

@@ -12,7 +12,7 @@ from ._common import LONG, configure
 
 
 def demo_basics():
-    log = loglady.logger()
+    log = loglady.named("basics")
     log.debug("this is a debug message")
     log.info("this one is an info message")
     log.warning("watch out, this one is a warning!")
@@ -52,35 +52,46 @@ def demo_magics():
     loglady.error("via magic loglady.error")
 
 
-def demo_prefixes():
-    l2 = loglady.prefix(prefix="prefix")
-    l2.debug("there's a", icon=">")
-    l2.info("bunch of neat", icon="->")
-    l2.warning("icons that can be!", icon="<-")
-    l2.success("used with prefix!", icon="o")
-    l2.error("including arrows, marks, and other fun bits!", icon="...")
-    l2.debug("there's a", icon="v")
-    l2.info("bunch of neat", icon="x")
-    l2.warning("icons that can be!", icon="*")
-    l2.success("used with prefix!", icon="**")
-    l2.error("including arrows, marks, and other fun bits!", icon="+")
-    l2.debug("there's a", icon="s")
-    l2.info("bunch of neat", icon="p")
-    l2.warning("icons that can be!", icon="!!")
-    l2.success("used with prefix!", icon="??")
-    l2.error("including arrows, marks, and other fun bits!", icon="?!")
-    l2.debug("there's a", icon="<3")
-    l2.info("bunch of neat", icon=":)")
-    l2.warning("icons that can be!", icon=":(")
-    l2.success("used with prefix!", icon="f")
-    l2.error("including arrows, marks, and other fun bits!", icon="snow")
+def demo_icons():
+    l2 = loglady.named("icons")
+
+    for n, icon in enumerate(
+        (
+            ">",
+            "->",
+            "<-",
+            "o",
+            "...",
+            "v",
+            "x",
+            "*",
+            "**",
+            "+",
+            "s",
+            "p",
+            "!!",
+            "??",
+            "?!",
+            "<3",
+            ":)",
+            ":(",
+            "f",
+            "snow",
+        )
+    ):
+        method = [l2.debug, l2.info, l2.warning, l2.success, l2.error][n % 5]
+        method("this is a message with a neat icon!", icon=icon)
+
+
+def demo_markup():
+    l2 = loglady.named("markup")
     l2.info("& you can use rich markup, like emoji :ok: and [green]color[/]!")
 
 
 class DemoCallsite:
     def __call__(self):
         def inner():
-            loglady.info("this log message is nestled deep!")
+            loglady.named("callsite").info("this log message is nestled deep!")
 
         inner()
 
@@ -89,5 +100,5 @@ if __name__ == "__main__":
     configure()
     demo_basics()
     demo_magics()
-    demo_prefixes()
+    demo_icons()
     DemoCallsite()()

@@ -60,8 +60,8 @@ class ManagerStack:
 
         self._fallback.drain_remaining_to_warn()
 
-    def logger(self, **context) -> Logger:
-        return Logger(_relay=self.relay, _context=context)
+    def logger(self, name: str = "", **context) -> Logger:
+        return Logger(_name=name, _relay=self.relay, _context=context)
 
     def relay(self, record: Record) -> None:
         self.current.relay(record)
