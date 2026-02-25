@@ -42,6 +42,41 @@ def test_bind_unbind():
     assert l1.context != l4.context
 
 
+def test_prefix_suffix():
+    relay = RelayStub()
+    l_root = Logger(_relay=relay)
+    l1 = l_root.prefixed("pre")
+    l2 = l1.suffixed("suf")
+    l3 = l2.prefixed("new-root")
+
+    assert l_root.name == ""
+    assert l1.name == "pre"
+    assert l2.name == "pre.suf"
+    assert l3.name == "new-root.pre.suf"
+
+
+def test_div_operator_name():
+    relay = RelayStub()
+    l_root = Logger(_name="parent", _relay=relay)
+    l1 = l_root / "child"
+    l2 = l1 / "grandchild"
+
+    assert l_root.name == "parent"
+    assert l1.name == "parent.child"
+    assert l2.name == "parent.child.grandchild"
+
+
+def test_div_operator_context():
+    relay = RelayStub()
+    l_root = Logger(_name="parent", _relay=relay)
+    l1 = l_root / dict(a=42)
+    l2 = l1 / dict(b="two")
+
+    assert l_root.context == dict()
+    assert l1.context == dict(a=42)
+    assert l2.context == dict(a=42, b="two")
+
+
 def test_methods():
     relay = RelayStub()
     log = Logger(_relay=relay)

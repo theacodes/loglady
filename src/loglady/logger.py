@@ -54,6 +54,21 @@ class Logger:
         """Create a new logger with the given suffix added to the name. The new logger inherits this logger's context."""
         return self.named(f"{self._name}{sep}{suffix}" if self._name else suffix)
 
+    def __truediv__(self, other):
+        """Create a new logger, depending on the type of `other`:
+
+        - if it's a str, it's treated as a suffix and passed to `suffixed()`.
+        - if it's a mapping, it's treated as context and passed to `bind()`.
+        """
+        match other:
+            case str():
+                return self.suffixed(other)
+            case Mapping():
+                return self.bind(**other)
+            case _:
+                msg = f"Unsupported operand type(s) for /: '{type(self)!r}' and '{type(other)!r}'. Expected str or Mapping."
+                raise TypeError(msg)
+
     #
     # Context
     #
