@@ -15,7 +15,6 @@ from rich.highlighter import ReprHighlighter
 from rich.padding import Padding
 from rich.panel import Panel
 from rich.segment import Segment
-from rich.style import Style
 from rich.syntax import Syntax
 from rich.table import Table
 from rich.text import Text
@@ -47,9 +46,11 @@ class CapturedExceptionRenderable:
 
     @group()
     def _render(self):
+        nl = Segment.line()
+
         if self.depth == 0:
             yield Text("An exception occurred:", "traceback.title")
-            yield Segment.line()
+            yield nl
 
             if self.exception.cause:
                 yield CapturedExceptionRenderable(
@@ -57,9 +58,9 @@ class CapturedExceptionRenderable:
                     depth=self.depth + 1,
                     indent=self.indent,
                 )
-                yield Segment.line()
+                yield nl
                 yield Text("The previous exception was the direct cause of:", "traceback.cause")
-                yield Segment.line()
+                yield nl
 
             if self.exception.context:
                 yield CapturedExceptionRenderable(
@@ -67,20 +68,20 @@ class CapturedExceptionRenderable:
                     depth=self.depth + 1,
                     indent=self.indent,
                 )
-                yield Segment.line()
+                yield nl
                 yield Text("While handling the above exception, another exception occurred:", "traceback.context")
-                yield Segment.line()
+                yield nl
 
         yield from self._traceback()
-        yield Segment.line()
         yield from self._title()
         yield from self._notes()
 
         if self.exception.exceptions:
-            yield Segment.line()
             for subexception in self.exception.exceptions:
+                yield nl
                 yield CapturedExceptionRenderable(exception=subexception, depth=self.depth + 1, indent=self.indent + 1)
-                yield Segment.line()
+
+        yield nl
 
     def _title(self):
         yield Text.assemble(
@@ -93,7 +94,7 @@ class CapturedExceptionRenderable:
 
     def _traceback(self):
         if self.exception.stack:
-            yield Padding(CapturedStackRenderable(stack=self.exception.stack, title="Traceback"), (0, 0))
+            yield CapturedStackRenderable(stack=self.exception.stack, title="Traceback")
 
     def _notes(self):
         for note in self.exception.notes or ():
@@ -132,6 +133,8 @@ class CapturedStackRenderable:
             )
 
             yield Constrain(frames, self.width)
+
+        yield Segment.line()
 
 
 @dataclass(slots=True, kw_only=True, frozen=True)
