@@ -25,11 +25,12 @@ from .magics import (
 )
 from .manager import Manager
 from .processors import add_call_info, add_thread_info, add_timestamp, fancy_prefix_icon
+from .record import CompareRecord, Record
 from .rich import RichConsoleDestination
 from .stack_capture import CapturedFrame, CapturedStack
 from .thread_capture import CapturedThreadInfo
 from .transport import SyncTransport, ThreadedTransport, Transport
-from .types import Processor, Record
+from .types import Processor
 
 __all__ = [
     "DEFAULT_PROCESSORS",
@@ -39,6 +40,7 @@ __all__ = [
     "CapturedFrame",
     "CapturedStack",
     "CapturedThreadInfo",
+    "CompareRecord",
     "Destination",
     "Logger",
     "LogladyError",

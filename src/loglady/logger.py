@@ -6,18 +6,19 @@ import contextlib
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from types import MappingProxyType
-from typing import Any, Self, overload, override
+from typing import Any, Final, Self, overload, override
 
 from .exception_capture import (
     CapturedException,
     capture_current_exception,
     capture_exception,
 )
+from .record import Context, Record
 from .stack_capture import CapturedStack
-from .types import Context, Relay, ReservedKeys
+from .types import Relay
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(slots=True, kw_only=True, frozen=True)
 class Logger:
     """It's the logger! You know how to log!
 
@@ -25,8 +26,11 @@ class Logger:
     instance.
     """
 
-    _relay: Relay
-    _context: Context = field(default_factory=dict)
+    # TODO: Rename me
+    _name: str = ""
+
+    _relay: Final[Relay]
+    _context: Final[Context] = field(default_factory=dict)
 
     @property
     def context(self) -> Mapping[str, Any]:
@@ -51,62 +55,73 @@ class Logger:
             inst._context.pop(key, None)
         return inst
 
+    # TODO: rename me
     def prefix(self, prefix: str, **context) -> Self:
-        """Shortcut for self.bind(prefix="...", ...)"""
-        context["prefix"] = prefix
-        return self.bind(**context)
+        """Shortcut for creating a new logger with the given name and context"""
+        return self.with_name(prefix).bind(**context)
 
-    def log(self, msg, **record: Any) -> None:
-        """You probably don't wanna call this, as it's the common log method
-        used by info(), warning(), etc. I mean, you can call it, I'm a
-        docstring, not a cop."""
-        rec = self._context.copy()
-        rec.update(**record)
-        rec["msg"] = msg
+    def with_name(self, name: str) -> Self:
+        return self.__class__(_relay=self._relay, _context=self._context, _name=name)
 
-        self._relay(rec)
+    def create_record(self, message: str, /, level: str | None = None, **context: Any) -> Record:
+        """Creates a new record without relaying it.
+        You shouldn't need to call this directly, it's used by `log()` and friends.
+        """
+        ctx = {**self._context, **context}
+
+        return Record(
+            message=message,
+            name=self._name,
+            level=level,
+            context=ctx,
+        )
+
+    def log(self, message: str, /, level: str | None = None, **context: Any) -> None:
+        """You probably don't wanna call this, as it's the common log method used by info(), warning(), etc. I mean,
+        you can call it, I'm a docstring, not a cop."""
+        self._relay(self.create_record(message, level=level, **context))
 
     def trace(
         self,
-        msg,
+        message: str,
         /,
         *,
-        level="debug",
+        level: str = "debug",
         show_lines: bool = True,
         show_locals: bool = False,
-        **record: Any,
+        **context: Any,
     ) -> None:
         """Log a message and include a stack trace."""
-        stack = CapturedStack.create_from_caller(
+        record = self.create_record(message, level=level, **context)
+
+        record.stack = CapturedStack.create_from_caller(
             capture_lines=show_lines,
             capture_locals=show_locals,
         )
-        if stack is not None:
-            record[ReservedKeys.captured_stack] = stack
 
-        self.log(msg, level=level, **record)
+        self._relay(record)
 
-    def debug(self, msg, **record: Any) -> None:
+    def debug(self, message: str, **context: Any) -> None:
         """Log a debug message"""
-        self.log(msg, level="debug", **record)
+        self.log(message, level="debug", **context)
 
-    def info(self, msg, **record: Any) -> None:
+    def info(self, message: str, **context: Any) -> None:
         """Log an info message"""
-        self.log(msg, level="info", **record)
+        self.log(message, level="info", **context)
 
-    def warning(self, msg, **record: Any) -> None:
+    def warning(self, message: str, **context: Any) -> None:
         """Log a warning message"""
-        self.log(msg, level="warning", **record)
+        self.log(message, level="warning", **context)
 
     warn = warning
 
-    def success(self, msg, **record: Any) -> None:
+    def success(self, message: str, **context: Any) -> None:
         """Log a success message"""
-        self.log(msg, level="success", **record)
+        self.log(message, level="success", **context)
 
-    def error(self, msg, **record: Any) -> None:
+    def error(self, message: str, **context: Any) -> None:
         """Log an error message"""
-        self.log(msg, level="error", **record)
+        self.log(message, level="error", **context)
 
     @overload
     def exception(
@@ -116,53 +131,53 @@ class Logger:
         *,
         show_lines: bool = True,
         show_locals: bool = False,
-        **record: Any,
+        **context: Any,
     ) -> None: ...
 
     @overload
     def exception(
         self,
-        msg: str,
+        message: str,
         err: BaseException | CapturedException | None = None,
         /,
         *,
         show_lines: bool = True,
         show_locals: bool = False,
-        **record: Any,
+        **context: Any,
     ) -> None: ...
 
     @overload
     def exception(
         self,
-        msg_or_err: str | BaseException | CapturedException | None = None,
+        message_or_err: str | BaseException | CapturedException | None = None,
         err_or_unspecified: BaseException | CapturedException | None = None,
         /,
         *,
         show_lines: bool = True,
         show_locals: bool = False,
-        **record: Any,
+        **context: Any,
     ) -> None: ...
 
     def exception(
         self,
-        msg_or_err: str | BaseException | CapturedException | None = None,
+        message_or_err: str | BaseException | CapturedException | None = None,
         err_or_unspecified: BaseException | CapturedException | None = None,
         /,
         *,
         show_lines: bool = True,
         show_locals: bool = False,
-        **record: Any,
+        **context: Any,
     ) -> None:
         """Log an error message and include exception information."""
 
-        match msg_or_err:
+        match message_or_err:
             case None:
-                msg = ""
+                message = ""
             case str():
-                msg = msg_or_err
+                message = message_or_err
             case BaseException() | CapturedException():
-                msg = ""
-                err_or_unspecified = msg_or_err
+                message = ""
+                err_or_unspecified = message_or_err
 
         match err_or_unspecified:
             case None:
@@ -177,18 +192,18 @@ class Logger:
                     capture_locals=show_locals,
                 )
 
-        if err is not None:
-            record[ReservedKeys.captured_exception] = err
+        record = self.create_record(message, level="error", **context)
+        record.exception = err
 
-        self.log(msg, level="error", **record)
+        self._relay(record)
 
-    def catch(self, exc_types=BaseException, *, msg: str = "unexpected error", reraise: bool = False):
+    def catch(self, exc_types=BaseException, *, message: str = "unexpected error", reraise: bool = False):
         @contextlib.contextmanager
         def catcher():
             try:
                 yield
             except exc_types as err:
-                self.exception(msg, err)
+                self.exception(message, err)
                 if reraise:
                     raise
 
@@ -196,7 +211,7 @@ class Logger:
 
     @override
     def __repr__(self) -> str:
-        return f"<{self.__class__.__name__} context={dict(self.context)!r}>"
+        return f"<{self.__class__.__name__} name={self._name} context={dict(self.context)!r}>"
 
     def __rich_repr__(self):
         yield "context", dict(self.context)

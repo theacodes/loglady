@@ -11,8 +11,8 @@ def test_default_fallback_mode():
     result = subprocess.run(
         [sys.executable, "tests/scripts/log_before_configure.py"], capture_output=True, check=True, text=True
     )
-    assert "notset: loglady.log() before" in result.stderr
-    assert "notset: logger.log() before" in result.stderr
+    assert "loglady.log() before" in result.stderr
+    assert "logger.log() before" in result.stderr
     assert "█ loglady.log() after" in result.stdout
     assert "█ logger.log() after" in result.stdout
 
@@ -25,8 +25,8 @@ def test_fallback_stderr():
         text=True,
         env=dict(LOGLADY_FALLBACK_MODE="stderr"),
     )
-    assert "notset: loglady.log() before" in result.stderr
-    assert "notset: logger.log() before" in result.stderr
+    assert "loglady.log() before" in result.stderr
+    assert "logger.log() before" in result.stderr
     assert "█ loglady.log() after" in result.stdout
     assert "█ logger.log() after" in result.stdout
 
@@ -54,8 +54,8 @@ def test_fallback_warn():
         env=dict(LOGLADY_FALLBACK_MODE="warn"),
     )
     assert "NotConfiguredWarning" in result.stderr
-    assert "notset: loglady.log() before" in result.stderr
-    assert "notset: logger.log() before" in result.stderr
+    assert "loglady.log() before" in result.stderr
+    assert "logger.log() before" in result.stderr
     assert "█ loglady.log() after" in result.stdout
     assert "█ logger.log() after" in result.stdout
 

@@ -5,9 +5,7 @@
 from typing import override
 
 import loglady
-from loglady import Destination, Record
-
-from .utils import assert_dict_subset
+from loglady import CompareRecord, Destination, Record
 
 
 class StubDestination(Destination):
@@ -32,17 +30,5 @@ def test_configure_and_magics():
     mgr.flush()
 
     assert len(dest.records) == 2
-    assert_dict_subset(
-        dest.records[0],
-        dict(
-            msg="hello, world!",
-            level="info",
-        ),
-    )
-    assert_dict_subset(
-        dest.records[1],
-        dict(
-            msg="Eek!",
-            level="warning",
-        ),
-    )
+    assert dest.records[0] == CompareRecord(message="hello, world!", level="info", context=dict())
+    assert dest.records[1] == CompareRecord(message="Eek!", level="warning", context=dict(context=42, more_stuff="..."))

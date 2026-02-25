@@ -2,11 +2,7 @@
 # Published under the standard MIT License.
 # Full text available at: https://opensource.org/licenses/MIT
 
-from loglady import Record
-from loglady.exception_capture import CapturedException
-from loglady.logger import Logger
-from loglady.stack_capture import CapturedFrame
-from loglady.types import ReservedKeys
+from loglady import CapturedFrame, CompareRecord, Logger, Record
 
 
 class RelayStub:
@@ -51,19 +47,19 @@ def test_methods():
     log = Logger(_relay=relay)
 
     log.log("hello", a=42)
-    assert relay.records.pop() == dict(msg="hello", a=42)
+    assert relay.records.pop() == CompareRecord(message="hello", context=dict(a=42))
     log.debug("hello", a=43)
-    assert relay.records.pop() == dict(msg="hello", level="debug", a=43)
+    assert relay.records.pop() == CompareRecord(message="hello", level="debug", context=dict(a=43))
     log.info("hello", a=45)
-    assert relay.records.pop() == dict(msg="hello", level="info", a=45)
+    assert relay.records.pop() == CompareRecord(message="hello", level="info", context=dict(a=45))
     log.warning("hello", a=46)
-    assert relay.records.pop() == dict(msg="hello", level="warning", a=46)
+    assert relay.records.pop() == CompareRecord(message="hello", level="warning", context=dict(a=46))
     log.warn("hello", a=47)
-    assert relay.records.pop() == dict(msg="hello", level="warning", a=47)
+    assert relay.records.pop() == CompareRecord(message="hello", level="warning", context=dict(a=47))
     log.success("hello", a=48)
-    assert relay.records.pop() == dict(msg="hello", level="success", a=48)
+    assert relay.records.pop() == CompareRecord(message="hello", level="success", context=dict(a=48))
     log.error("hello", a=49)
-    assert relay.records.pop() == dict(msg="hello", level="error", a=49)
+    assert relay.records.pop() == CompareRecord(message="hello", level="error", context=dict(a=49))
 
 
 def test_exception():
@@ -72,22 +68,22 @@ def test_exception():
 
     # No exception current set, should just return the record as-is
     log.exception("hmm")
-    assert relay.records.pop() == dict(msg="hmm", level="error")
+    assert relay.records.pop() == CompareRecord(message="hmm", level="error")
 
     # Explicitly passing an exception instance
     err = ValueError("hrm")
     log.exception(err)
     record = relay.records.pop()
-    assert record["msg"] == ""
-    captured: CapturedException = record[ReservedKeys.captured_exception]
+    assert record.message == ""
+    captured = record.exception
     assert captured.string == "hrm"
     assert captured.type == "ValueError"
 
     # Passing in both a message and an error instance
     log.exception("oh, no!", err)  # noqa: PLE1205
     record = relay.records.pop()
-    assert record["msg"] == "oh, no!"
-    captured: CapturedException = record[ReservedKeys.captured_exception]
+    assert record.message == "oh, no!"
+    captured = record.exception
     assert captured.string == "hrm"
     assert captured.type == "ValueError"
 
@@ -98,8 +94,8 @@ def test_exception():
         log.exception()
 
     record = relay.records.pop()
-    assert record["msg"] == ""
-    captured: CapturedException = record[ReservedKeys.captured_exception]
+    assert record.message == ""
+    captured = record.exception
     assert captured.string == "oops"
     assert captured.type == "ValueError"
 
@@ -110,8 +106,8 @@ def test_exception():
         log.exception("oh, no!")
 
     record = relay.records.pop()
-    assert record["msg"] == "oh, no!"
-    captured: CapturedException = record[ReservedKeys.captured_exception]
+    assert record.message == "oh, no!"
+    captured = record.exception
     assert captured.string == "oops"
     assert captured.type == "ValueError"
 
@@ -122,15 +118,15 @@ def test_trace():
 
     log.trace("hmm")
     record = relay.records.pop()
-    assert record["msg"] == "hmm"
-    stack = record[ReservedKeys.captured_stack]
+    assert record.message == "hmm"
+    stack = record.stack
     first = stack[0]
     assert isinstance(first, CapturedFrame)
 
 
 def test_methods_with_context():
     relay = RelayStub()
-    log = Logger(_relay=relay).bind(context_a=42)
+    log = Logger(_relay=relay).bind(a=42)
 
     log.log("hello")
-    assert relay.records.pop() == dict(msg="hello", context_a=42)
+    assert relay.records.pop() == CompareRecord(message="hello", context=dict(a=42))

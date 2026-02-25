@@ -12,7 +12,7 @@ _counter: float = 0
 
 def add_mock_timestamp(record: loglady.Record) -> loglady.Record:
     global _counter  # noqa: PLW0603
-    record["timestamp"] = datetime.datetime(  # noqa: DTZ001
+    record.timestamp = datetime.datetime(  # noqa: DTZ001
         year=2024,
         month=3,
         day=15,

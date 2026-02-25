@@ -5,9 +5,9 @@
 import datetime
 
 from .exception_capture import capture_exception
+from .record import Record
 from .stack_capture import CapturedFrame
 from .thread_capture import CapturedThreadInfo
-from .types import Record, ReservedKeys
 
 
 def eagerly_capture_exceptions(record: Record) -> Record:
@@ -26,23 +26,22 @@ def eagerly_capture_exceptions(record: Record) -> Record:
 
 def add_timestamp(record: Record) -> Record:
     """Adds the current timestamp"""
-    if ReservedKeys.timestamp not in record:
-        record[ReservedKeys.timestamp] = datetime.datetime.now().astimezone(None)
+    if record.timestamp is None:
+        record.timestamp = datetime.datetime.now().astimezone(None)
     return record
 
 
 def add_thread_info(record: Record) -> Record:
     """Adds the current thread native id and name"""
-    if ReservedKeys.captured_thread_info not in record:
-        record[ReservedKeys.captured_thread_info] = CapturedThreadInfo.create()
+    if record.thread is None:
+        record.thread = CapturedThreadInfo.create()
     return record
 
 
 def add_call_info(record: Record) -> Record:
     """Add the calling function's name, filename, module, and lineno"""
-    if ReservedKeys.captured_call_info not in record:
-        frame = CapturedFrame.create_from_caller()
-        record[ReservedKeys.captured_call_info] = frame
+    if record.caller is None:
+        record.caller = CapturedFrame.create_from_caller()
     return record
 
 

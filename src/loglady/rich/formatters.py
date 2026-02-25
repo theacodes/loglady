@@ -21,8 +21,7 @@ from rich.containers import Renderables
 from rich.table import Table
 from rich.text import Text
 
-from loglady.stack_capture import CapturedFrame
-from loglady.types import Record, ReservedKeys
+from loglady.record import Record
 
 from .traceback_renderables import CapturedExceptionRenderable, CapturedStackRenderable
 
@@ -92,11 +91,11 @@ class FormattedRecord(ConsoleRenderable):
 
 
 class TextPartFormatter(Protocol):
-    def __call__(self, record: Record, original: Record) -> Text | str: ...
+    def __call__(self, record: Record) -> Text | str: ...
 
 
 class ExtendedPartFormatter(Protocol):
-    def __call__(self, record: Record, original: Record) -> RenderableType | None: ...
+    def __call__(self, record: Record) -> RenderableType | None: ...
 
 
 @dataclass(slots=True, kw_only=True)
@@ -115,35 +114,34 @@ class RecordFormatter:
     items: TextPartFormatter = field(default_factory=lambda: RecordItemsFormatter())
 
     def __call__(self, record: Record) -> FormattedRecord:
-        original = dict(record)
         return FormattedRecord(
-            timestamp=self.timestamp(record, original),
-            level=self.level(record, original),
-            callsite=self.callsite(record, original),
-            thread=self.thread(record, original),
-            exception=self.exception(record, original),
-            stack=self.stack(record, original),
-            message=self.message(record, original),
-            items=self.items(record, original),
+            timestamp=self.timestamp(record),
+            level=self.level(record),
+            callsite=self.callsite(record),
+            thread=self.thread(record),
+            exception=self.exception(record),
+            stack=self.stack(record),
+            message=self.message(record),
+            items=self.items(record),
         )
 
 
 @dataclass(slots=True)
 class CapturedExceptionFormatter(ExtendedPartFormatter):
     @override
-    def __call__(self, record: Record, original: Record):
-        if (exc := record.pop(ReservedKeys.captured_exception, None)) is None:
+    def __call__(self, record: Record):
+        if record.exception is None:
             return None
-        return CapturedExceptionRenderable(exception=exc)
+        return CapturedExceptionRenderable(exception=record.exception)
 
 
 @dataclass(slots=True)
 class CapturedStackFormatter(ExtendedPartFormatter):
     @override
-    def __call__(self, record: Record, original: Record):
-        if (stack := record.pop(ReservedKeys.captured_stack, None)) is None:
+    def __call__(self, record: Record):
+        if record.stack is None:
             return None
-        return CapturedStackRenderable(stack=stack)
+        return CapturedStackRenderable(stack=record.stack)
 
 
 DEFAULT_LEVEL_TO_TEXT = MappingProxyType(
@@ -164,8 +162,8 @@ class LevelFormatter(TextPartFormatter):
     level_to_text: Mapping[str, Text] = DEFAULT_LEVEL_TO_TEXT
 
     @override
-    def __call__(self, record: Record, original: Record):
-        level = record.pop(ReservedKeys.level, "notset")
+    def __call__(self, record: Record):
+        level = record.level or "notset"
         sash = self.level_to_text.get(level, DEFAULT_NOTSET_TEXT)
         return sash
 
@@ -173,22 +171,21 @@ class LevelFormatter(TextPartFormatter):
 @dataclass(slots=True)
 class MessageFormatter(TextPartFormatter):
     @override
-    def __call__(self, record: Record, original: Record):
-        return Text.assemble(*self._gen_items(record, original))
+    def __call__(self, record: Record):
+        return Text.assemble(*self._gen_items(record))
 
-    def _gen_items(self, record: Record, original: Record):
-        level = original.get(ReservedKeys.level, "notset")
+    def _gen_items(self, record: Record):
+        level = record.level or "notset"
         style = f"log.level.{level}"
 
-        if (prefix := record.pop(ReservedKeys.prefix, None)) is not None:
-            yield Text(f"{prefix} ", style=style)
+        if record.name:
+            yield Text(f"{record.name} ", style=style)
 
-            icon = record.pop(ReservedKeys.icon, "●")
+            icon = record.context.pop("icon", "●")
             if icon:
                 yield Text(f"{icon} ", style=style)
 
-        msg = record.pop(ReservedKeys.msg)
-        formatted = Text.from_markup(text=f"{msg} ", style=style)
+        formatted = Text.from_markup(text=f"{record.message} ", style=style)
 
         yield formatted
 
@@ -196,13 +193,11 @@ class MessageFormatter(TextPartFormatter):
 @dataclass(slots=True)
 class TimestampFormatter(TextPartFormatter):
     @override
-    def __call__(self, record: Record, original: Record):
-        timestamp = record.pop(ReservedKeys.timestamp, None)
-
-        if not timestamp:
+    def __call__(self, record: Record):
+        if record.timestamp is None:
             return ""
 
-        return timestamp.strftime(format="%H:%M")
+        return record.timestamp.strftime(format="%H:%M")
 
 
 @dataclass(slots=True)
@@ -211,8 +206,8 @@ class CallInfoFormatter(TextPartFormatter):
     collapse_special: bool = True
 
     @override
-    def __call__(self, record: Record, original: Record):
-        info: CapturedFrame | None = record.pop(ReservedKeys.captured_call_info, None)
+    def __call__(self, record: Record):
+        info = record.caller
 
         if info is None:
             return "."
@@ -240,8 +235,8 @@ class NonrepeatedFormatter(TextPartFormatter):
     _last: Any = field(init=False, default=None)
 
     @override
-    def __call__(self, record: Record, original: Record):
-        new = self.formatter(record, original)
+    def __call__(self, record: Record):
+        new = self.formatter(record)
 
         if new == self._last:
             if self.fill:
@@ -273,7 +268,7 @@ class RecordItemsFormatter(TextPartFormatter):
     )
 
     @override
-    def __call__(self, record: Record, original: Record):
+    def __call__(self, record: Record):
         return Text.assemble(*self._gen_items(record))
 
     def _gen_items(self, record: Record):
@@ -292,8 +287,8 @@ class RecordItemsFormatter(TextPartFormatter):
 @dataclass(slots=True)
 class ThreadInfoFormatter(TextPartFormatter):
     @override
-    def __call__(self, record: Record, original: Record):
-        if (info := record.pop(ReservedKeys.captured_thread_info, None)) is None:
+    def __call__(self, record: Record):
+        if record.thread is None:
             return ""
 
-        return Text(text=info.emoji)
+        return Text(record.thread.emoji)

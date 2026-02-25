@@ -3,15 +3,13 @@
 # Full text available at: https://opensource.org/licenses/MIT
 
 
-import loglady.processors
-from loglady.stack_capture import CapturedFrame
-from loglady.types import ReservedKeys
+from loglady import CapturedFrame, Record, processors
 
 
 def test_add_call_info():
-    record = loglady.processors.add_call_info(dict())
+    record = processors.add_call_info(Record(message="hello"))
 
-    info = record.get(ReservedKeys.captured_call_info)
+    info = record.caller
     assert isinstance(info, CapturedFrame)
     assert info.qualname == "test_add_call_info"
     assert info.module_name == __name__
@@ -21,11 +19,11 @@ def test_add_call_info():
 def test_add_call_info_with_invisible_fn():
     def invisible_fn():
         __tracebackhide__ = True
-        return loglady.processors.add_call_info(dict())
+        return processors.add_call_info(Record(message="hello"))
 
     record = invisible_fn()
 
-    info = record.get(ReservedKeys.captured_call_info)
+    info = record.caller
     assert isinstance(info, CapturedFrame)
     assert info.qualname == "test_add_call_info_with_invisible_fn"
     assert info.module_name == __name__

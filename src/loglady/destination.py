@@ -66,9 +66,11 @@ class PlainFormatter:
     """A simple formatter that formats the record as a string."""
 
     def __call__(self, record: Record) -> str:
-        level = record.get("level", "notset")
-        msg = record.pop("msg")
-        return f"{level}: {msg} {record=!r}\n"
+        level = record.level
+        context = f"{record.context!r}" if record.context else None
+        ts = record.timestamp.isoformat() if record.timestamp else None
+        parts = [record.name, level, record.message, context, ts]
+        return f"{' '.join(filter(None, parts))}\n"
 
 
 @dataclass(slots=True, kw_only=True)

@@ -4,8 +4,7 @@
 
 from typing import override
 
-from loglady import Destination, Record
-from loglady.transport import SyncTransport, ThreadedTransport
+from loglady import Destination, Record, SyncTransport, ThreadedTransport
 
 
 class StubDestination(Destination):
@@ -20,7 +19,7 @@ class StubDestination(Destination):
 
 def test_sync_transport():
     transp = SyncTransport()
-    record = dict(a=42, b="hello!")
+    record = Record(message="hello")
 
     # No destinations, shouldn't do anything but also shouldn't error.
     transp.relay(record)
@@ -30,7 +29,7 @@ def test_sync_transport():
 
     transp.relay(record)
 
-    assert dest.records.pop() == dict(a=42, b="hello!")
+    assert dest.records.pop() is record
 
 
 def test_threaded_transport():
@@ -38,7 +37,7 @@ def test_threaded_transport():
     dest = StubDestination()
     transp.destinations = [dest]
 
-    record = dict(a=42, b="hello!")
+    record = Record(message="hello")
 
     transp.relay(record)
 
@@ -49,6 +48,6 @@ def test_threaded_transport():
     transp.start()
     transp.flush()
 
-    assert dest.records.pop() == dict(a=42, b="hello!")
+    assert dest.records.pop() is record
 
     transp.shutdown()
