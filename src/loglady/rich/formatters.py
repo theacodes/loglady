@@ -341,4 +341,6 @@ def fancy_icon(icon: str | None) -> str | None:
         case "snow":
             icon = "☃︎"
         case _:
-            return None
+            pass
+
+    return icon
