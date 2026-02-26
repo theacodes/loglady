@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+import os
 import typing
 import warnings
 from dataclasses import dataclass, field
@@ -23,17 +24,20 @@ from .warnings import NotConfiguredWarning
 FallbackMode = Literal["buffer", "stderr", "warn", "error"]
 
 
-def validate_fallback_mode(mode: str) -> FallbackMode:
+def environ_fallback_mode() -> FallbackMode:
+    mode = os.environ.get("LOGLADY_FALLBACK_MODE", "stderr")
     mode = mode.lower()
+
     valid_options = typing.get_args(FallbackMode)
     if mode not in valid_options:
         raise InvalidFallbackModeError(mode=mode, valid_options=valid_options)
+
     return typing.cast(FallbackMode, mode)
 
 
 @dataclass(slots=True, kw_only=True)
 class Fallback:
-    mode: Final[FallbackMode]
+    mode: Final[FallbackMode] = field(default_factory=environ_fallback_mode)
 
     _manager: Manager = field(init=False)
     _buffered: Final[CaptureDestination] = field(init=False, default_factory=CaptureDestination)

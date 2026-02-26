@@ -7,8 +7,7 @@ import atexit
 import contextlib
 from dataclasses import InitVar, dataclass, field
 
-from ._environ import FALLBACK_MODE
-from ._fallback import Fallback, FallbackMode, validate_fallback_mode
+from ._fallback import Fallback, FallbackMode
 from .logger import Logger
 from .manager import Manager
 from .record import Record
@@ -22,7 +21,10 @@ class ManagerStack:
     _fallback: Fallback = field(init=False)
 
     def __post_init__(self, fallback_mode: FallbackMode | None):
-        self._fallback = Fallback(mode=validate_fallback_mode(fallback_mode or FALLBACK_MODE))
+        if fallback_mode is not None:
+            self._fallback = Fallback(mode=fallback_mode)
+        else:
+            self._fallback = Fallback()
 
     @property
     def current(self) -> Manager:
