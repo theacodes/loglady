@@ -14,10 +14,9 @@ import pytest
 import rich
 
 from . import config, manager_stack
-from .destination import CaptureDestination, Destination
+from .destinations import CaptureDestination
+from .record import Record
 from .rich.destination import RichConsoleDestination
-from .transport import SyncTransport
-from .types import Record
 
 
 @pytest.hookimpl(trylast=True)
@@ -64,6 +63,8 @@ class LogladyPlugin:
         self._fixture_captured = None
         self._manager = None
         self._has_fixture = False
+        self._current_destination = None
+        self._rich_destination = RichConsoleDestination()
 
     @property
     def use_color(self) -> bool:
@@ -85,17 +86,24 @@ class LogladyPlugin:
     def start_global_capturing(self):
         self._global_captured = CaptureDestination(limit=self.capture_limit)
 
-        destinations: list[Destination] = [self._global_captured]
+        self._manager = config.create_manager(
+            processors=[
+                *config.DEFAULT_PROCESSORS,
+                self._destination,
+            ]
+        )
+
+    def _destination(self, record: Record):
+        if self._global_captured is not None:
+            self._global_captured(record)
 
         if self.log_to_stdout:
-            destinations.append(RichConsoleDestination())
+            self._rich_destination(record)
 
-        self._manager = config.configure(
-            transport=SyncTransport(destinations=destinations),
-            processors=config.DEFAULT_PROCESSORS,
-            install_hook=False,
-            once=False,
-        )
+        if self._current_destination is not None:
+            return self._current_destination(record)
+
+        return record
 
     def stop_global_capturing(self):
         if self._manager is None:
@@ -116,12 +124,12 @@ class LogladyPlugin:
             return
 
         assert self._manager is not None
-        self._manager.transport.destinations = self._fixture_captured
+        self._current_destination = self._fixture_captured
 
     def deactivate_fixture(self):
         assert self._manager is not None
         assert self._global_captured is not None
-        self._manager.transport.destinations = self._global_captured
+        self._current_destination = self._global_captured
 
     def grab_captured_output(self) -> str | None:
         if self._global_captured is None:

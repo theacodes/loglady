@@ -3,7 +3,7 @@
 # Full text available at: https://opensource.org/licenses/MIT
 
 import contextlib
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import Any, Final, Self, overload, override
@@ -15,7 +15,8 @@ from .exception_capture import (
 )
 from .record import Context, Record
 from .stack_capture import CapturedStack
-from .types import Relay
+
+type Send = Callable[[Record], None]
 
 
 @dataclass(slots=True, kw_only=True, frozen=True)
@@ -27,7 +28,7 @@ class Logger:
     """
 
     _name: Final[str] = ""
-    _relay: Final[Relay]
+    _send: Final[Send]
     _context: Final[Context] = field(default_factory=dict)
 
     #
@@ -44,7 +45,7 @@ class Logger:
 
     def named(self, name: str) -> Self:
         """Create a new logger with the given name. The new logger inherits this logger's context."""
-        return self.__class__(_relay=self._relay, _context=self._context, _name=name)
+        return self.__class__(_send=self._send, _context=self._context, _name=name)
 
     def prefixed(self, prefix: str, *, sep=".") -> Self:
         """Create a new logger with the given prefix added to the name. The new logger inherits this logger's context."""
@@ -85,7 +86,7 @@ class Logger:
 
         ctx = self._context.copy()
         ctx.update(**context)
-        return self.__class__(_relay=self._relay, _context=ctx)
+        return self.__class__(_send=self._send, _context=ctx)
 
     def unbind(self, *keys: str) -> Self:
         """Create a new logger without the given keys in the context."""
@@ -117,7 +118,7 @@ class Logger:
 
         You probably don't wanna call this directly, it's used by `log()` and friends. However, if you need to
         manipulate a record before sending it, this could be useful."""
-        self._relay(record)
+        self._send(record)
 
     #
     # Logging methods
@@ -126,7 +127,7 @@ class Logger:
     def log(self, message: str, /, level: str | None = None, **context: Any) -> None:
         """You probably don't wanna call this, as it's the common log method used by info(), warning(), etc. I mean,
         you can call it, I'm a docstring, not a cop."""
-        self._relay(self.create_record(message, level=level, **context))
+        self._send(self.create_record(message, level=level, **context))
 
     def trace(
         self,
@@ -146,7 +147,7 @@ class Logger:
             capture_locals=show_locals,
         )
 
-        self._relay(record)
+        self._send(record)
 
     def debug(self, message: str, **context: Any) -> None:
         """Log a debug message"""
@@ -242,7 +243,7 @@ class Logger:
         record = self.create_record(message, level="error", **context)
         record.exception = err
 
-        self._relay(record)
+        self._send(record)
 
     def catch(self, exc_types=BaseException, *, message: str = "unexpected error", reraise: bool = False):
         @contextlib.contextmanager

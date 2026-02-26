@@ -10,7 +10,7 @@ from .stack_capture import CapturedFrame
 from .thread_capture import CapturedThreadInfo
 
 
-def eagerly_capture_exceptions(record: Record) -> Record:
+def eagerly_capture_exceptions(record: Record):
     """Eagerly captures exception info for any exceptions passed into record items.
 
     Typically you'd use `logger.exception` to explicitly capture a single exception, but sometimes you might do
@@ -21,31 +21,29 @@ def eagerly_capture_exceptions(record: Record) -> Record:
         if isinstance(v, BaseException):
             record[k] = capture_exception(v, capture_lines=False, capture_locals=False, capture_traceback=False)
 
-    return record
 
-
-def add_timestamp(record: Record) -> Record:
+def add_timestamp(record: Record):
     """Adds the current timestamp"""
     if record.timestamp is None:
         record.timestamp = datetime.datetime.now().astimezone(None)
     return record
 
 
-def add_thread_info(record: Record) -> Record:
+def add_thread_info(record: Record):
     """Adds the current thread native id and name"""
     if record.thread is None:
         record.thread = CapturedThreadInfo.create()
     return record
 
 
-def add_call_info(record: Record) -> Record:
+def add_call_info(record: Record):
     """Add the calling function's name, filename, module, and lineno"""
     if record.caller is None:
         record.caller = CapturedFrame.create_from_caller()
     return record
 
 
-def fancy_prefix_icon(record: Record) -> Record:
+def fancy_prefix_icon(record: Record):
     icon = record.get("icon", None)
 
     match icon:

@@ -7,7 +7,7 @@ name = "loglady"
 dynamic = ["version"]
 description = ''
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.13"
 license = "MIT"
 keywords = []
 authors = [
@@ -155,7 +155,7 @@ include = ["src", "tests"]
 exclude = ["**/__pycache__"]
 reportMissingImports = true
 reportMissingTypeStubs = false
-pythonVersion = "3.12"
+pythonVersion = "3.13"
 pythonPlatform = "Linux"
 typeCheckingMode = "standard"
 strictListInference = true

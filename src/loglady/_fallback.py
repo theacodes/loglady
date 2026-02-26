@@ -6,19 +6,18 @@
 
 from __future__ import annotations
 
-import sys
 import typing
 import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Final, Literal, override
 
-from .destination import CaptureDestination, Destination, LazyDestination, TextIODestination
+from .destinations import CaptureDestination, stderr_destination
 from .errors import InvalidFallbackModeError, NotConfiguredError
 from .manager import Manager
+from .processor import Processor
 from .processors import add_timestamp
-from .transport import SyncTransport
-from .types import Record
+from .record import Record
 from .warnings import NotConfiguredWarning
 
 FallbackMode = Literal["buffer", "stderr", "warn", "error"]
@@ -36,92 +35,74 @@ def validate_fallback_mode(mode: str) -> FallbackMode:
 class Fallback:
     mode: Final[FallbackMode]
 
-    _stderr_destination: Destination = field(init=False)
-    _capture_destination: CaptureDestination = field(init=False)
-    _warn_destination: _WarnDestination = field(init=False)
-    _buffered_manager: Manager = field(init=False)
-    _stderr_manager: Manager = field(init=False)
-    _warn_manager: Manager = field(init=False)
-    _error_manager: Manager = field(init=False)
+    _manager: Manager = field(init=False)
+    _buffered: Final[CaptureDestination] = field(init=False, default_factory=CaptureDestination)
 
     def __post_init__(self):
-        self._stderr_destination = LazyDestination(lambda: TextIODestination(io=sys.stderr))
-        self._capture_destination = CaptureDestination()
-        self._warn_destination = _WarnDestination(
-            msg="loglady.log() called before loglady.configure()", next_destination=self._stderr_destination
-        )
-        self._buffered_manager = Manager(
-            transport=SyncTransport(self._capture_destination),
-            processors=[add_timestamp],
-        )
-        self._stderr_manager = Manager(
-            transport=SyncTransport(self._stderr_destination),
-            processors=[],
-        )
-        self._warn_manager = Manager(
-            transport=SyncTransport(self._warn_destination),
-            processors=[],
-        )
-        self._error_manager = Manager(
-            transport=SyncTransport(_ErrorDestination()),
-            processors=[],
-        )
-
-    @property
-    def manager(self):
         match self.mode:
             case "buffer":
-                return self._buffered_manager
+                self._manager = Manager(processors=[add_timestamp, self._buffered])
             case "stderr":
-                return self._stderr_manager
+                self._manager = Manager(processors=[stderr_destination()])
             case "warn":
-                return self._warn_manager
+                self._manager = Manager(processors=[_Warner(), stderr_destination()])
             case "error":
-                return self._error_manager
+                self._manager = Manager(processors=[_Raiser()])
+
+    @property
+    def manager(self) -> Manager:
+        return self._manager
 
     def flush(self):
         self.manager.flush()
 
-    def drain_to_new_manager(self, manager: Manager):
-        src = self._capture_destination
+    def drain_to(self, manager: Manager):
+        src = self._buffered
         if not src.records:
             return
 
         for record in src.records:
-            manager.relay(record)
+            manager.send(record)
 
         src.reset()
         manager.flush()
 
-    def drain_remaining_to_warn(self):
-        self._warn_destination.msg = "program exited with buffered logs before loglady.configure() was called"
-        self.drain_to_new_manager(self._warn_manager)
+    def warn_buffered(self):
+        self.drain_to(
+            Manager(
+                processors=[
+                    _Warner(
+                        message="program exited with buffered logs before loglady.configure() was called",
+                    ),
+                    stderr_destination(),
+                ]
+            )
+        )
 
 
 _WARNING_SKIP_PREFIXES = (str(Path(__file__).parent),)
 
 
-class _WarnDestination(Destination):
-    def __init__(self, msg: str, next_destination: Destination):
-        super().__init__()
-        self.msg = msg
-        self.next_destination = next_destination
-        self.has_warned = False
+@dataclass(slots=True, kw_only=True)
+class _Warner(Processor):
+    message: Final[str] = "loglady.log() called before loglady.configure() was called"
+    _has_warned: bool = False
 
     @override
     def __call__(self, record: Record) -> None:
-        if not self.has_warned:
-            self.has_warned = True
-            warnings.warn(
-                NotConfiguredWarning(),
-                skip_file_prefixes=_WARNING_SKIP_PREFIXES,
-                stacklevel=2,
-            )
+        if self._has_warned:
+            return
 
-        self.next_destination(record)
+        self._has_warned = True
+
+        warnings.warn(
+            NotConfiguredWarning(),
+            skip_file_prefixes=_WARNING_SKIP_PREFIXES,
+            stacklevel=2,
+        )
 
 
-class _ErrorDestination(Destination):
+class _Raiser(Processor):
     @override
     def __call__(self, record: Record) -> None:
         raise NotConfiguredError()

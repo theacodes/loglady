@@ -31,8 +31,8 @@ class UndeliveredLogsWarning(LogladyWarning):
         super().__init__(f"background thread shutdown with {remaining_logs} logs undelivered.")
 
 
-class DestinationErrorWarning(LogladyWarning):
-    """Warning for when a destination raises an error in the background thread."""
+class BackgroundProcessorWarning(LogladyWarning):
+    """Warning for when a processor raises an error in the background thread."""
 
-    def __init__(self, *, destination: Any, error: Exception) -> None:
-        super().__init__(f"error in background thread while delivering log to destination {destination!r}: {error!r}")
+    def __init__(self, *, processor: Any, error: Exception) -> None:
+        super().__init__(f"error in background thread while delivering log to processor {processor!r}: {error!r}")

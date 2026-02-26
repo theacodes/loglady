@@ -11,7 +11,7 @@ from ._environ import FALLBACK_MODE
 from ._fallback import Fallback, FallbackMode, validate_fallback_mode
 from .logger import Logger
 from .manager import Manager
-from .types import Record
+from .record import Record
 
 
 @dataclass(slots=True, kw_only=True)
@@ -37,7 +37,7 @@ class ManagerStack:
     def push(self, manager: Manager) -> None:
         # When the first real manager is pushed onto the stack, send all collected fallback logs to it.
         if not self.has_valid_manager:
-            self._fallback.drain_to_new_manager(manager)
+            self._fallback.drain_to(manager)
 
         self._stack.append(manager)
 
@@ -58,13 +58,13 @@ class ManagerStack:
         for manager in self._stack:
             manager.shutdown()
 
-        self._fallback.drain_remaining_to_warn()
+        self._fallback.warn_buffered()
 
     def logger(self, name: str = "", **context) -> Logger:
-        return Logger(_name=name, _relay=self.relay, _context=context)
+        return Logger(_name=name, _send=self.relay, _context=context)
 
     def relay(self, record: Record) -> None:
-        self.current.relay(record)
+        self.current.send(record)
 
     @contextlib.contextmanager
     def rewind(self):

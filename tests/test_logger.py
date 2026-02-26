@@ -17,17 +17,17 @@ class RelayStub:
 def test_construct():
     relay = RelayStub()
 
-    logger = Logger(_relay=relay)
+    logger = Logger(_send=relay)
     assert logger.context == {}
 
-    logger = Logger(_relay=relay, _context=dict(a=42))
+    logger = Logger(_send=relay, _context=dict(a=42))
     assert logger.context == dict(a=42)
 
 
 def test_bind_unbind():
     relay = RelayStub()
 
-    l_root = Logger(_relay=relay)
+    l_root = Logger(_send=relay)
     l1 = l_root.bind(a=42, b="two")
     l2 = l1.bind(a=43, c="three")
     l3 = l1.bind(a=None, d="four")
@@ -44,7 +44,7 @@ def test_bind_unbind():
 
 def test_prefix_suffix():
     relay = RelayStub()
-    l_root = Logger(_relay=relay)
+    l_root = Logger(_send=relay)
     l1 = l_root.prefixed("pre")
     l2 = l1.suffixed("suf")
     l3 = l2.prefixed("new-root")
@@ -57,7 +57,7 @@ def test_prefix_suffix():
 
 def test_div_operator_name():
     relay = RelayStub()
-    l_root = Logger(_name="parent", _relay=relay)
+    l_root = Logger(_name="parent", _send=relay)
     l1 = l_root / "child"
     l2 = l1 / "grandchild"
 
@@ -68,7 +68,7 @@ def test_div_operator_name():
 
 def test_div_operator_context():
     relay = RelayStub()
-    l_root = Logger(_name="parent", _relay=relay)
+    l_root = Logger(_name="parent", _send=relay)
     l1 = l_root / dict(a=42)
     l2 = l1 / dict(b="two")
 
@@ -79,7 +79,7 @@ def test_div_operator_context():
 
 def test_methods():
     relay = RelayStub()
-    log = Logger(_relay=relay)
+    log = Logger(_send=relay)
 
     log.log("hello", a=42)
     assert relay.records.pop() == CompareRecord(message="hello", context=dict(a=42))
@@ -99,7 +99,7 @@ def test_methods():
 
 def test_exception():
     relay = RelayStub()
-    log = Logger(_relay=relay)
+    log = Logger(_send=relay)
 
     # No exception current set, should just return the record as-is
     log.exception("hmm")
@@ -149,7 +149,7 @@ def test_exception():
 
 def test_trace():
     relay = RelayStub()
-    log = Logger(_relay=relay)
+    log = Logger(_send=relay)
 
     log.trace("hmm")
     record = relay.records.pop()
@@ -161,7 +161,7 @@ def test_trace():
 
 def test_methods_with_context():
     relay = RelayStub()
-    log = Logger(_relay=relay).bind(a=42)
+    log = Logger(_send=relay).bind(a=42)
 
     log.log("hello")
     assert relay.records.pop() == CompareRecord(message="hello", context=dict(a=42))

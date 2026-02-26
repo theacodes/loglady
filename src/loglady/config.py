@@ -8,13 +8,16 @@ This global config is used by magics (the top-level loglady.info, etc.), and
 should be configured at application startup.
 """
 
+import sys
+from collections.abc import Sequence
+
 from . import manager_stack, processors
-from .destination import DestinationList
+from .destinations import ReprFormatter, TextIODestination
 from .excepthook import install_excepthook, is_repl
 from .manager import Manager
+from .processor import Processor
 from .rich import RichConsoleDestination
-from .transport import SyncTransport, ThreadedTransport, Transport
-from .types import ProcessorList
+from .thread_transport import ThreadTransport
 
 DEFAULT_PROCESSORS = (
     processors.add_timestamp,
@@ -27,11 +30,11 @@ DEFAULT_PROCESSORS = (
 
 def configure(
     *,
-    transport: Transport | None = None,
-    processors: ProcessorList = DEFAULT_PROCESSORS,
-    destinations: DestinationList | None = None,
+    threaded: bool | None = None,
+    rich: bool = True,
     once: bool = False,
-    install_hook: bool = True,
+    excepthook: bool = True,
+    processors: Sequence[Processor] | None = None,
 ) -> Manager:
     """Configure LogLady.
 
@@ -43,30 +46,46 @@ def configure(
     stuff can happen. It also installs an atexit() handler to call the Manager's
     stop() to ensure all logs are written before exit.
     """
-    if once and manager_stack.has_valid_manager():
-        return manager_stack.current()
+    if (mgr := _check_once(once)) is not None:
+        return mgr
 
-    if transport is None:
-        if is_repl():
-            transport = SyncTransport()
-        else:
-            transport = ThreadedTransport()
-            transport.start()
+    processors = [*DEFAULT_PROCESSORS, *(processors or ())]
 
-    if destinations is None:
-        destinations = [RichConsoleDestination()]
+    if rich:
+        destination = RichConsoleDestination()
+    else:
+        destination = TextIODestination(io=sys.stderr, formatter=ReprFormatter())
 
-    if not transport.destinations:
-        transport.destinations = destinations
+    if threaded is None:
+        threaded = not is_repl()
 
-    mgr = Manager(
-        transport=transport,
-        processors=processors,
-    )
+    if threaded:
+        transport = ThreadTransport([destination])
+        transport.start()
+        processors.append(transport)
+    else:
+        processors.append(destination)
 
+    if excepthook:
+        _setup_excepthook()
+
+    return create_manager(processors)
+
+
+def create_manager(processors: Sequence[Processor]):
+    mgr = Manager(processors=list(processors))
     manager_stack.push(mgr)
-
-    if not is_repl() and install_hook:
-        install_excepthook()
-
     return mgr
+
+
+def _check_once(once: bool) -> Manager | None:  # noqa: FBT001
+    if not once:
+        return None
+    if manager_stack.has_valid_manager():
+        manager_stack.current()
+    return None
+
+
+def _setup_excepthook(install: bool = True):  # noqa: FBT001, FBT002
+    if install and not is_repl():
+        install_excepthook()

@@ -19,9 +19,8 @@ found on Logger.
 
 from typing import Any, overload
 
-from loglady.exception_capture import CapturedException
-
 from . import manager_stack
+from .exception_capture import CapturedException
 from .logger import Logger
 
 #

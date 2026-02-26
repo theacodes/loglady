@@ -3,7 +3,7 @@
 # Full text available at: https://opensource.org/licenses/MIT
 
 from .config import DEFAULT_PROCESSORS, configure
-from .destination import CaptureDestination, Destination, TextIODestination
+from .destinations import CaptureDestination, TextIODestination, stderr_destination
 from .errors import LogladyError
 from .exception_capture import CapturedException
 from .logger import Logger
@@ -24,13 +24,13 @@ from .magics import (
     warning,
 )
 from .manager import Manager
+from .processor import Processor, ProcessorError, ProcessorReturn
 from .processors import add_call_info, add_thread_info, add_timestamp, fancy_prefix_icon
 from .record import CompareRecord, Record
 from .rich import RichConsoleDestination
 from .stack_capture import CapturedFrame, CapturedStack
 from .thread_capture import CapturedThreadInfo
-from .transport import SyncTransport, ThreadedTransport, Transport
-from .types import Processor
+from .thread_transport import ThreadTransport
 
 __all__ = [
     "DEFAULT_PROCESSORS",
@@ -40,17 +40,16 @@ __all__ = [
     "CapturedStack",
     "CapturedThreadInfo",
     "CompareRecord",
-    "Destination",
     "Logger",
     "LogladyError",
     "Manager",
     "Processor",
+    "ProcessorError",
+    "ProcessorReturn",
     "Record",
     "RichConsoleDestination",
-    "SyncTransport",
     "TextIODestination",
-    "ThreadedTransport",
-    "Transport",
+    "ThreadTransport",
     "add_call_info",
     "add_thread_info",
     "add_timestamp",
@@ -66,6 +65,7 @@ __all__ = [
     "log",
     "logger",
     "named",
+    "stderr_destination",
     "success",
     "trace",
     "warn",

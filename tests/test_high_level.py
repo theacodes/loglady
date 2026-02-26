@@ -2,25 +2,16 @@
 # Published under the standard MIT License.
 # Full text available at: https://opensource.org/licenses/MIT
 
-from typing import override
 
 import loglady
-from loglady import CompareRecord, Destination, Record
+from loglady import CompareRecord
 
-
-class StubDestination(Destination):
-    def __init__(self):
-        super().__init__()
-        self.records = []
-
-    @override
-    def __call__(self, record: Record):
-        self.records.append(record)
+from .stub_destination import StubDestination
 
 
 def test_configure_and_magics():
     dest = StubDestination()
-    mgr = loglady.configure(destinations=[dest])
+    mgr = loglady.configure(processors=[dest])
 
     loglady.info("hello, world!")
 

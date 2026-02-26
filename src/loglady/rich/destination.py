@@ -13,8 +13,8 @@ from rich.console import Console
 from rich.text import Text
 from rich.theme import Theme
 
-from loglady.destination import Destination
-from loglady.types import Record
+from loglady.processor import Processor
+from loglady.record import Record
 
 from . import formatters
 
@@ -38,7 +38,7 @@ DEFAULT_THEME = Theme(
 
 
 @dataclass(slots=True, kw_only=True)
-class RichConsoleDestination(Destination):
+class RichConsoleDestination(Processor):
     console: InitVar[Console | None] = None
     theme: InitVar[Theme | None] = None
     io: InitVar[IO[str] | None] = None

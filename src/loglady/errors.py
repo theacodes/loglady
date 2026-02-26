@@ -10,6 +10,16 @@ class LogladyError(Exception):
     """Base class for all LogLady errors."""
 
 
+class ProcessorError(LogladyError):
+    """Raised when a processor raises an exception during processing."""
+
+    processor: object
+
+    def __init__(self, *, processor: object) -> None:
+        super().__init__(f"Processor {processor!r} raised an exception")
+        self.processor = processor
+
+
 class InvalidFallbackModeError(LogladyError):
     """Raised when an invalid fallback mode is specified."""
 

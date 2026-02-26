@@ -4,29 +4,14 @@
 
 from __future__ import annotations
 
+import sys
 from collections import deque
-from collections.abc import Callable, Sequence
+from collections.abc import Callable
 from dataclasses import InitVar, dataclass, field
-from functools import cached_property
-from typing import Protocol, override
+from typing import Final, Protocol, override
 
-from .types import Record
-
-
-class Destination(Protocol):
-    """A destination is responsible for *outputting* a Record. They're the last link in the chain."""
-
-    def flush(self):
-        """If this destination buffers output, flush it and block until all records have been outputted."""
-        return
-
-    def __call__(self, record: Record) -> None:
-        """Output the given record to the destination."""
-        ...
-
-
-type DestinationList = Sequence[Destination]
-
+from .processor import Flushable, Processor, process
+from .record import Record
 
 type TextIODestinationFormatter = Callable[[Record], str]
 
@@ -39,7 +24,7 @@ class _TextIO(Protocol):
 
 
 @dataclass(slots=True, kw_only=True)
-class TextIODestination(Destination):
+class TextIODestination(Processor, Flushable):
     """A simple destination that just outputs strings to a TextIO instance."""
 
     io: _TextIO
@@ -53,6 +38,11 @@ class TextIODestination(Destination):
     @override
     def flush(self):
         self.io.flush()
+
+
+def stderr_destination(formatter: TextIODestinationFormatter | None = None) -> TextIODestination:
+    """Create a TextIODestination that writes to stderr."""
+    return TextIODestination(io=sys.stderr, formatter=formatter or PlainFormatter())
 
 
 class ReprFormatter:
@@ -74,7 +64,7 @@ class PlainFormatter:
 
 
 @dataclass(slots=True, kw_only=True)
-class CaptureDestination(Destination):
+class CaptureDestination(Processor):
     """A simple destination that records all records."""
 
     limit: InitVar[int | None] = None
@@ -99,11 +89,10 @@ class CaptureDestination(Destination):
         self.records.clear()
         self.discarded_records = 0
 
-    def playback(self, *destinations: Destination):
-        """Playback recorded records to all given destinations"""
+    def playback(self, *processors: Processor):
+        """Playback recorded records into the given processors."""
         for record in self.records:
-            for destination in destinations:
-                destination(record)
+            process(record, processors)
 
     def __enter__(self):
         self.reset()
@@ -113,17 +102,17 @@ class CaptureDestination(Destination):
         self.reset()
 
 
-@dataclass()
-class LazyDestination(Destination):
-    """A destination that wraps another destination, only creating it when
-    actually needed."""
+@dataclass(slots=True, kw_only=True)
+class LazyDestination(Processor):
+    """A destination that wraps another processor, only creating it when actually needed."""
 
-    factory: Callable[[], Destination]
+    factory: Final[Callable[[], Processor]]
 
-    @cached_property
-    def instance(self) -> Destination:
-        return self.factory()
+    _instance: Processor | None = field(init=False, default=None, repr=False)
 
     @override
     def __call__(self, record: Record) -> None:
-        self.instance(record)
+        if self._instance is None:
+            self._instance = self.factory()
+
+        self._instance(record)
