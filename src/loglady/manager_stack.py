@@ -5,9 +5,9 @@
 
 import atexit
 import contextlib
-from dataclasses import InitVar, dataclass, field
+from dataclasses import dataclass, field
 
-from ._fallback import Fallback, FallbackMode
+from ._fallback import Fallback
 from .logger import Logger
 from .manager import Manager
 from .record import Record
@@ -15,16 +15,8 @@ from .record import Record
 
 @dataclass(slots=True, kw_only=True)
 class ManagerStack:
-    fallback_mode: InitVar[FallbackMode | None] = None
-
-    _stack: list[Manager] = field(default_factory=list)
-    _fallback: Fallback = field(init=False)
-
-    def __post_init__(self, fallback_mode: FallbackMode | None):
-        if fallback_mode is not None:
-            self._fallback = Fallback(mode=fallback_mode)
-        else:
-            self._fallback = Fallback()
+    _stack: list[Manager] = field(init=False, default_factory=list)
+    _fallback: Fallback = field(init=False, default_factory=Fallback)
 
     @property
     def current(self) -> Manager:

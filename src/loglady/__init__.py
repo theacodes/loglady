@@ -31,6 +31,7 @@ from .rich import RichConsoleDestination
 from .stack_capture import CapturedFrame, CapturedStack
 from .thread_capture import CapturedThreadInfo
 from .thread_transport import ThreadTransport
+from .warnings import LogladyWarning
 
 __all__ = [
     "DEFAULT_PROCESSORS",
@@ -42,6 +43,7 @@ __all__ = [
     "CompareRecord",
     "Logger",
     "LogladyError",
+    "LogladyWarning",
     "Manager",
     "Processor",
     "ProcessorError",

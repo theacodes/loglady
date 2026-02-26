@@ -20,7 +20,6 @@ def test_threaded_transport():
     assert len(dest.records) == 0
 
     # Start the thread, flush, and check again.
-    transp.start()
     transp.flush()
 
     assert dest.records.pop() is record

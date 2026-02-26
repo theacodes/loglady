@@ -67,7 +67,6 @@ def configure(
 
     if threaded:
         transport = ThreadTransport([destination])
-        transport.start()
         processors.append(transport)
     else:
         processors.append(destination)

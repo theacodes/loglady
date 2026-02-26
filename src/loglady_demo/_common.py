@@ -35,5 +35,5 @@ describes this is redacted. Repeat the word."""
 
 def configure():
     loglady.configure(
-        processors=[*loglady.DEFAULT_PROCESSORS, add_mock_timestamp],
+        processors=[add_mock_timestamp],
     )
