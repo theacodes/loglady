@@ -8,10 +8,6 @@ from types import TracebackType
 from . import manager_stack
 
 
-def is_repl() -> bool:
-    return hasattr(sys, "ps1")
-
-
 def install_excepthook():
     if sys.excepthook == sys.__excepthook__:
         sys.excepthook = excepthook
