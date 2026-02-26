@@ -31,7 +31,6 @@ def excepthook(
         )
 
         manager_stack.flush_all()
-        manager_stack.stop_all()
 
     except Exception as err:  # noqa: BLE001
         # If something goes wrong in our excepthook, defer to the default one and log a short message.

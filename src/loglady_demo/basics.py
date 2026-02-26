@@ -97,6 +97,8 @@ class DemoCallsite:
 
 
 if __name__ == "__main__":
+    loglady.info("this log message was created before loglady.configure() was called")
+
     configure()
     demo_basics()
     demo_magics()

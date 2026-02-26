@@ -29,9 +29,9 @@ class Manager:
     ):
         self._logger_prototype = Logger(_send=self.send)
 
-    def logger(self, **context):
+    def logger(self, name: str = "", **context):
         """Get a new Logger."""
-        return self._logger_prototype.bind(**context)
+        return self._logger_prototype.named(name).bind(**context)
 
     def flush(self):
         """Ask all processors to write any pending logs."""
@@ -40,9 +40,3 @@ class Manager:
     def send(self, record: Record) -> None:
         """Send a record by running it through all of the processors."""
         process(record, self.processors)
-
-    # TODO: Do we wanna keep this? It also no longer shuts down the thread transport.
-    def shutdown(self):
-        self.flush()
-        # self.transport.flush()
-        # self.transport.shutdown()
