@@ -7,8 +7,9 @@ from __future__ import annotations
 import contextlib
 from collections import UserString
 from collections.abc import Generator, Sequence
+from dataclasses import dataclass, field
 from io import StringIO
-from typing import Literal, cast
+from typing import Literal, cast, override
 
 import pytest
 import rich
@@ -46,6 +47,7 @@ def pytest_addoption(parser):
     )
 
 
+@dataclass()
 class LogladyPlugin:
     """
     Plugin for pytest that gathers global logs and associates them with tests.
@@ -56,15 +58,14 @@ class LogladyPlugin:
     - https://github.com/pytest-dev/pytest/blob/72c682ff9773ad2690711105a100423ebf7c7c15/src/_pytest/capture.py#L709-L710
     """
 
-    def __init__(self, config: pytest.Config) -> None:
-        super().__init__()
-        self.config = config
-        self._global_captured = None
-        self._fixture_captured = None
-        self._manager = None
-        self._has_fixture = False
-        self._current_destination = None
-        self._rich_destination = RichConsoleDestination()
+    config: pytest.Config
+
+    _global_captured: CaptureDestination | None = field(default=None, init=False)
+    _fixture_captured: CaptureDestination | None = field(default=None, init=False)
+    _manager: config.Manager | None = field(default=None, init=False)
+    _has_fixture: bool = field(default=False, init=False)
+    _current_destination: CaptureDestination | None = field(default=None, init=False)
+    _rich_destination: RichConsoleDestination = field(default_factory=RichConsoleDestination, init=False)
 
     @property
     def use_color(self) -> bool:
@@ -149,11 +150,14 @@ class LogladyPlugin:
     def item_capture(self, when: str, item: pytest.Item) -> Generator[None]:
         self.start_global_capturing()
         self.activate_fixture()
+
         try:
             yield
+
         finally:
             self.deactivate_fixture()
             self.stop_global_capturing()
+
             if (captured := self.grab_captured_output()) is not None:
                 # NOTE: The '*' in the key is load-bearing. Without it, pytest will try to use this section when
                 # dropping into `--pdb`, but that doesn't handle the deferred rendering string correctly.
@@ -206,6 +210,10 @@ class LogladyPlugin:
     @pytest.hookimpl(tryfirst=True)
     def pytest_internalerror(self) -> None:
         self.stop_global_capturing()
+
+    @override
+    def __hash__(self) -> int:
+        return object.__hash__(self)
 
 
 class _DeferredCapturedOutput(UserString):
