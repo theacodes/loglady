@@ -25,7 +25,7 @@ from .magics import (
 )
 from .manager import Manager
 from .processor import Processor, ProcessorError, ProcessorReturn
-from .processors import add_call_info, add_thread_info, add_timestamp, fancy_prefix_icon
+from .processors import add_call_info, add_thread_info, add_timestamp
 from .record import CompareRecord, Record
 from .rich import RichConsoleDestination
 from .stack_capture import CapturedFrame, CapturedStack
@@ -61,7 +61,6 @@ __all__ = [
     "debug",
     "error",
     "exception",
-    "fancy_prefix_icon",
     "flush",
     "info",
     "log",

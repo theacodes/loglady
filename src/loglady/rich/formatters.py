@@ -12,7 +12,7 @@ import reprlib
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from types import MappingProxyType
-from typing import Any, Protocol, override
+from typing import Any, Protocol, cast, override
 
 import rich
 import rich.highlighter
@@ -182,6 +182,8 @@ class MessageFormatter(TextPartFormatter):
             yield Text(f"{record.name} ", style=style)
 
             icon = record.context.pop("icon", "●")
+            icon = fancy_icon(cast(str, icon))
+
             if icon:
                 yield Text(f"{icon} ", style=style)
 
@@ -292,3 +294,51 @@ class ThreadInfoFormatter(TextPartFormatter):
             return ""
 
         return Text(record.thread.emoji)
+
+
+def fancy_icon(icon: str | None) -> str | None:
+    match icon:
+        case ">":
+            icon = "➤"
+        case "->":
+            icon = "🡲"
+        case "<-":
+            icon = "🡰"
+        case "o":
+            icon = "●"
+        case "...":
+            icon = "…"
+        case "v":
+            icon = "✓"
+        case "x":
+            icon = "✗"
+        case "*":
+            icon = "🟊"
+        case "**":
+            icon = "🞷"
+        case "+":
+            icon = "✦"
+        case "s":
+            icon = "§"
+        case "p":
+            icon = "¶"
+        case "!!":
+            icon = "‼︎"
+        case "!?":
+            icon = "⁉︎"
+        case "?!":
+            icon = "⁈"
+        case "??":
+            icon = "⁇"
+        case "<3":
+            icon = "❤︎"
+        case ":)":
+            icon = "☺︎"
+        case ":(":
+            icon = "☹︎"
+        case "f":
+            icon = "⚑"
+        case "snow":
+            icon = "☃︎"
+        case _:
+            return None

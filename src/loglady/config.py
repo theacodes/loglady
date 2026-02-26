@@ -24,7 +24,6 @@ DEFAULT_PROCESSORS = (
     processors.add_timestamp,
     processors.add_thread_info,
     processors.add_call_info,
-    processors.fancy_prefix_icon,
     processors.eagerly_capture_exceptions,
 )
 
