@@ -64,7 +64,6 @@ class LogladyPlugin:
     _fixture_captured: CaptureDestination | None = field(default=None, init=False)
     _manager: config.Manager | None = field(default=None, init=False)
     _has_fixture: bool = field(default=False, init=False)
-    _current_destination: CaptureDestination | None = field(default=None, init=False)
     _rich_destination: RichConsoleDestination = field(default_factory=RichConsoleDestination, init=False)
 
     @property
@@ -98,11 +97,11 @@ class LogladyPlugin:
         if self._global_captured is not None:
             self._global_captured(record)
 
+        if self._fixture_captured is not None:
+            self._fixture_captured(record)
+
         if self.log_to_stdout:
             self._rich_destination(record)
-
-        if self._current_destination is not None:
-            return self._current_destination(record)
 
         return record
 
@@ -125,12 +124,10 @@ class LogladyPlugin:
             return
 
         assert self._manager is not None
-        self._current_destination = self._fixture_captured
 
     def deactivate_fixture(self):
         assert self._manager is not None
         assert self._global_captured is not None
-        self._current_destination = self._global_captured
 
     def grab_captured_output(self) -> str | None:
         if self._global_captured is None:
