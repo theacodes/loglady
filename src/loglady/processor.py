@@ -37,15 +37,21 @@ class Flushable(Protocol):
 
 
 def process(record: Record, processors: Iterable[Processor]):
-    """Run a record through a list of processors."""
-    for _ in iter_process(record, processors):
-        pass
+    """Run a record through a list of processors.
+
+    Returns the final record after processing, or None if the record was discarded by a processor.
+    """
+    for record_ in iter_process(record, processors):
+        if record_ is None:
+            return None
+        record = record_
+    return record
 
 
-def iter_process(record: Record, processors: Iterable[Processor]) -> Iterable[Record]:
+def iter_process(record: Record, processors: Iterable[Processor]) -> Iterable[Record | None]:
     """Run a record through a list of processors, yielding the processor and result after each processor.
 
-    If a processor returns or raises `Discard`, the record will not be yielded and no further processors will be
+    If a processor returns or raises `Discard`, then `None` will be yielded and no further processors will be
     invoked.
 
     This is a low-level operation that is used by `process()` and advanced grouped processors to handle processor
@@ -62,8 +68,10 @@ def iter_process(record: Record, processors: Iterable[Processor]) -> Iterable[Re
 
         match result:
             case Discard():
+                yield None
                 return
             case discard if discard is Discard:
+                yield None
                 return
             case Record():
                 record = result
