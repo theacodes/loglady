@@ -77,6 +77,26 @@ def test_div_operator_context():
     assert l2.context == dict(a=42, b="two")
 
 
+def test_attach():
+    relay = RelayStub()
+    l_root = Logger(_name="parent", _send=relay)
+
+    def processor(record: Record):
+        print("invoked processor", record)
+        record.context["attached"] = 42
+        return record
+
+    l1 = l_root.attach(processor)
+    assert l1 is not l_root
+
+    l1.info("hello")
+    assert relay.records.pop() == CompareRecord(message="hello", context=dict(attached=42))
+
+    # Shouldn't affect the root logger.
+    l_root.info("hello")
+    assert relay.records.pop() == CompareRecord(message="hello", context={})
+
+
 def test_methods():
     relay = RelayStub()
     log = Logger(_send=relay)

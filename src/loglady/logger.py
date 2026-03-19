@@ -3,7 +3,7 @@
 # Full text available at: https://opensource.org/licenses/MIT
 
 import contextlib
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import Any, Final, Self, overload, override
@@ -13,6 +13,7 @@ from .exception_capture import (
     capture_current_exception,
     capture_exception,
 )
+from .processor import Processor, process
 from .record import Context, Record
 from .stack_capture import CapturedStack
 
@@ -30,6 +31,24 @@ class Logger:
     _name: Final[str] = ""
     _send: Final[Send]
     _context: Final[Context] = field(default_factory=dict)
+    _processors: Sequence[Processor] = field(default_factory=tuple)
+
+    #
+    # Construction helpers
+    #
+    def _copy(
+        self,
+        name: str | None = None,
+        context: Context | None = None,
+        processors: Sequence[Processor] | None = None,
+    ) -> Self:
+        # NOTE: I'd just use copy.replace() but it's not type safe.
+        return self.__class__(
+            _send=self._send,
+            _name=name if name is not None else self._name,
+            _context=context if context is not None else self._context,
+            _processors=processors if processors is not None else self._processors,
+        )
 
     #
     # Naming
@@ -45,7 +64,7 @@ class Logger:
 
     def named(self, name: str) -> Self:
         """Create a new logger with the given name. The new logger inherits this logger's context."""
-        return self.__class__(_send=self._send, _context=self._context, _name=name)
+        return self._copy(name=name)
 
     def prefixed(self, prefix: str, *, sep=".") -> Self:
         """Create a new logger with the given prefix added to the name. The new logger inherits this logger's context."""
@@ -84,9 +103,12 @@ class Logger:
         if context is self.context or self.context == context == {}:
             return self
 
-        ctx = self._context.copy()
-        ctx.update(**context)
-        return self.__class__(_send=self._send, _context=ctx)
+        ctx = {
+            **self._context,
+            **context,
+        }
+
+        return self._copy(context=ctx)
 
     def unbind(self, *keys: str) -> Self:
         """Create a new logger without the given keys in the context."""
@@ -96,13 +118,28 @@ class Logger:
         return inst
 
     #
+    # Processors
+    #
+
+    def attach(self, *processors: Processor) -> Self:
+        """Create a new logger with the given processors added.
+
+        Logger-level processors are run before handing off the record to the manager, so they can be used to eagerly
+        modify records just for this logger.
+        """
+        if not processors:
+            return self
+
+        return self._copy(processors=(*self._processors, *processors))
+
+    #
     # Helpers
     #
 
     def create_record(self, message: str, /, level: str | None = None, **context: Any) -> Record:
         """Creates a new record without relaying it.
 
-        You shouldn't need to call this directly, it's used by `log()` and friends.
+        You shouldn't usually need to call this directly, it's used by `log()` and friends.
         """
         ctx = {**self._context, **context}
 
@@ -114,11 +151,16 @@ class Logger:
         )
 
     def relay(self, record: Record) -> None:
-        """Relays a precreate Record.
+        """Relays a precreated Record.
 
         You probably don't wanna call this directly, it's used by `log()` and friends. However, if you need to
         manipulate a record before sending it, this could be useful."""
-        self._send(record)
+
+        processed = process(record, self._processors)
+        if processed is None:
+            return
+
+        self._send(processed)
 
     #
     # Logging methods
@@ -127,7 +169,7 @@ class Logger:
     def log(self, message: str, /, level: str | None = None, **context: Any) -> None:
         """You probably don't wanna call this, as it's the common log method used by info(), warning(), etc. I mean,
         you can call it, I'm a docstring, not a cop."""
-        self._send(self.create_record(message, level=level, **context))
+        self.relay(self.create_record(message, level=level, **context))
 
     def trace(
         self,
@@ -147,7 +189,7 @@ class Logger:
             capture_locals=show_locals,
         )
 
-        self._send(record)
+        self.relay(record)
 
     def debug(self, message: str, **context: Any) -> None:
         """Log a debug message"""
@@ -243,7 +285,7 @@ class Logger:
         record = self.create_record(message, level="error", **context)
         record.exception = err
 
-        self._send(record)
+        self.relay(record)
 
     def catch(self, exc_types=BaseException, *, message: str = "unexpected error", reraise: bool = False):
         @contextlib.contextmanager
@@ -262,6 +304,7 @@ class Logger:
         return f"<{self.__class__.__name__} name={self._name} context={dict(self.context)!r}>"
 
     def __rich_repr__(self):
+        yield "name", self._name
         yield "context", dict(self.context)
 
     __rich_repr__.angular = True  # pyright: ignore[reportFunctionMemberAccess]
