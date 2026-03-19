@@ -43,6 +43,8 @@ multiple lines. {LONG}.""",
         long_nested=[1, 2, [3, 4, LONG, [5, 6, [7, 8, LONG, LONG], 9], 10], 11],
     )
 
+    log.info("this one has [red]rich markup[/] and an emoji :ok:")
+
 
 def demo_magics():
     loglady.debug("via magic loglady.debug")
